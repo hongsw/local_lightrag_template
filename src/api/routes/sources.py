@@ -204,4 +204,6 @@ async def get_stats(
         embedding_model=stats["embedding_model"],
         is_initialized=stats["is_initialized"],
         available_sources=available_sources,
+        tracked_files=stats.get("tracked_files", 0),
+        tracked_size_bytes=stats.get("tracked_size_bytes", 0),
     )
