@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lightrag-api-ingress
+  namespace: lightrag
+  annotations:
+    # nginx ingress controller
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: lightrag.example.com  # 실제 도메인으로 변경
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lightrag-api
+                port:
+                  number: 80
+  # TLS 설정 (선택)
+  # tls:
+  #   - hosts:
+  #       - lightrag.example.com
+  #     secretName: lightrag-tls-secret

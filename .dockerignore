@@ -1,0 +1,54 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Git
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test/Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+tests/
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Documentation (not needed in image)
+docs/
+*.md
+!requirements.txt
+
+# Data directories (mounted at runtime)
+lightrag_data/
+rag_raw_pdfs/
+
+# Kubernetes configs
+k8s/

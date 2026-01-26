@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: lightrag
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  # - ingress.yaml  # 필요시 주석 해제
+
+commonLabels:
+  app.kubernetes.io/name: lightrag-api
+  app.kubernetes.io/part-of: lightrag
+
+images:
+  - name: lightrag-api
+    newName: lightrag-api
+    newTag: latest

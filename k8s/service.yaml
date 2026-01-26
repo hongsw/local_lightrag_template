@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lightrag-api
+  namespace: lightrag
+  labels:
+    app: lightrag-api
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+      name: http
+  selector:
+    app: lightrag-api
+---
+# NodePort for direct access (optional)
+apiVersion: v1
+kind: Service
+metadata:
+  name: lightrag-api-nodeport
+  namespace: lightrag
+  labels:
+    app: lightrag-api
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8000
+      nodePort: 30800
+      protocol: TCP
+      name: http
+  selector:
+    app: lightrag-api

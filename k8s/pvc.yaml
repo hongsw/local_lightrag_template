@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lightrag-data-pvc
+  namespace: lightrag
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard  # 클러스터에 맞게 수정
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lightrag-pdfs-pvc
+  namespace: lightrag
+spec:
+  accessModes:
+    - ReadWriteMany  # 여러 Pod에서 읽기 가능
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard  # 클러스터에 맞게 수정

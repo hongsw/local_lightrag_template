@@ -9,6 +9,7 @@ LightRAG 기반 Knowledge Graph + Vector 검색을 지원하는 RAG(Retrieval-Au
 - **다양한 데이터 소스**: Local Files, Google Drive, Slack, Notion 커넥터
 - **FastAPI 기반**: 자동 API 문서화 (Swagger UI)
 - **문서 청킹**: 효율적인 문서 분할 및 처리
+- **컨테이너 지원**: Docker, Docker Compose, Kubernetes 배포 지원
 
 ## 요구 사항
 
@@ -100,6 +101,58 @@ curl -X POST "http://localhost:8000/query" \
 
 브라우저에서 `http://localhost:8000/docs` 접속
 
+## Docker로 실행
+
+```bash
+# .env 파일 생성 (OPENAI_API_KEY 필수)
+echo "OPENAI_API_KEY=sk-your-api-key" > .env
+
+# Docker Compose로 실행
+docker compose up -d
+
+# 로그 확인
+docker compose logs -f
+
+# 중지
+docker compose down
+```
+
+### 수동 Docker 실행
+
+```bash
+# 이미지 빌드
+docker build -t lightrag-api:latest .
+
+# 컨테이너 실행
+docker run -d \
+  --name lightrag-api \
+  -p 8000:8000 \
+  -e OPENAI_API_KEY=sk-your-api-key \
+  -v $(pwd)/rag_raw_pdfs:/app/rag_raw_pdfs:ro \
+  -v lightrag_data:/app/lightrag_data \
+  lightrag-api:latest
+```
+
+## Kubernetes 배포
+
+```bash
+# Secret 설정 (k8s/secret.yaml 수정 또는)
+kubectl create namespace lightrag
+kubectl -n lightrag create secret generic lightrag-secret \
+  --from-literal=OPENAI_API_KEY=sk-your-api-key
+
+# Kustomize로 배포
+kubectl apply -k k8s/
+
+# 상태 확인
+kubectl -n lightrag get all
+
+# 포트 포워딩
+kubectl -n lightrag port-forward svc/lightrag-api 8000:80
+```
+
+자세한 배포 가이드는 [DEPLOYMENT.md](docs/DEPLOYMENT.md) 참조
+
 ## 프로젝트 구조
 
 ```
@@ -121,10 +174,22 @@ korea_tech_edu_rag_pdf/
 │   ├── config.py             # 환경 설정
 │   ├── processor.py          # 문서 청킹
 │   └── rag_engine.py         # LightRAG 래퍼
+├── k8s/                      # Kubernetes 매니페스트
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── configmap.yaml
+│   ├── secret.yaml
+│   ├── pvc.yaml
+│   ├── ingress.yaml
+│   └── kustomization.yaml
 ├── docs/
-│   └── API_USAGE.md          # API 상세 문서
+│   ├── API_USAGE.md          # API 상세 문서
+│   └── DEPLOYMENT.md         # 배포 가이드
 ├── rag_raw_pdfs/             # PDF 파일 디렉토리
 ├── lightrag_data/            # LightRAG 데이터 저장소
+├── Dockerfile                # Docker 이미지 빌드
+├── docker-compose.yml        # Docker Compose 설정
+├── Makefile                  # 편의 명령어
 ├── run.py                    # 실행 스크립트
 ├── requirements.txt          # 의존성
 └── .env                      # 환경 변수 (생성 필요)
@@ -166,6 +231,22 @@ ruff check src/
 
 # 타입 체크
 mypy src/
+```
+
+### Makefile 명령어
+
+```bash
+make help           # 도움말
+make install        # 의존성 설치
+make dev            # 개발 서버 실행
+make test           # 테스트 실행
+make lint           # 린트 실행
+make docker-build   # Docker 이미지 빌드
+make docker-run     # Docker Compose 실행
+make docker-stop    # Docker Compose 중지
+make k8s-deploy     # Kubernetes 배포
+make k8s-delete     # Kubernetes 삭제
+make health         # 헬스체크
 ```
 
 ## 선택적 커넥터 설치
