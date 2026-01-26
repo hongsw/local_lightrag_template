@@ -1,0 +1,43 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment files
+.env
+.env.local
+
+# LightRAG data (generated)
+lightrag_data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# PDF files (ignore all except LIGHTRAG paper)
+rag_raw_pdfs/*
+!rag_raw_pdfs/LIGHTRAG.2410.05779v3.pdf
+
+# Test/Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Build
+dist/
+build/
+*.egg-info/

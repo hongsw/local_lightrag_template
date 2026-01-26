@@ -1,0 +1,31 @@
+# LightRAG - Knowledge Graph + Vector RAG
+lightrag-hku>=1.0.0
+
+# LlamaIndex Core and Readers
+llama-index-core>=0.10.0
+llama-index-readers-file>=0.1.0
+
+# FastAPI and Server
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+python-multipart>=0.0.6
+
+# Configuration and Validation
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# PDF Processing
+pymupdf>=1.24.0
+
+# OpenAI (for LightRAG LLM)
+openai>=1.0.0
+
+# Async support
+aiofiles>=23.0.0
+
+# Optional: Additional LlamaHub readers (install as needed)
+# llama-index-readers-google>=0.1.0
+# llama-index-readers-slack>=0.1.0
+# llama-index-readers-notion>=0.1.0
+# llama-index-readers-s3>=0.1.0
