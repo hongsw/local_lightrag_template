@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LightRAG Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); }
+        .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .file-item { transition: background 0.2s; }
+        .file-item:hover { background: #f3f4f6; }
+        .mode-btn { transition: all 0.2s; }
+        .mode-btn.active { background: #667eea; color: white; }
+        .mode-btn:not(.active):hover { background: #e5e7eb; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-6 px-8 shadow-lg">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i data-lucide="brain" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold">LightRAG Dashboard</h1>
+                    <p class="text-white/70 text-sm">Knowledge Graph + Vector RAG System</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="health-status" class="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                    <span class="w-2 h-2 bg-green-400 rounded-full pulse"></span>
+                    <span class="text-sm">Healthy</span>
+                </div>
+                <button onclick="refreshAll()" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition flex items-center gap-2">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card card rounded-2xl p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <i data-lucide="file-text" class="w-6 h-6 text-blue-600"></i>
+                    </div>
+                    <span class="text-xs text-gray-400 uppercase tracking-wide">Tracked</span>
+                </div>
+                <div class="text-3xl font-bold text-gray-800" id="stat-files">-</div>
+                <div class="text-sm text-gray-500">Indexed Files</div>
+            </div>
+
+            <div class="stat-card card rounded-2xl p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <i data-lucide="database" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <span class="text-xs text-gray-400 uppercase tracking-wide">Chunks</span>
+                </div>
+                <div class="text-3xl font-bold text-gray-800" id="stat-docs">-</div>
+                <div class="text-sm text-gray-500">Document Chunks</div>
+            </div>
+
+            <div class="stat-card card rounded-2xl p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <i data-lucide="hard-drive" class="w-6 h-6 text-green-600"></i>
+                    </div>
+                    <span class="text-xs text-gray-400 uppercase tracking-wide">Size</span>
+                </div>
+                <div class="text-3xl font-bold text-gray-800" id="stat-size">-</div>
+                <div class="text-sm text-gray-500">Total Size</div>
+            </div>
+
+            <div class="stat-card card rounded-2xl p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                        <i data-lucide="cpu" class="w-6 h-6 text-orange-600"></i>
+                    </div>
+                    <span class="text-xs text-gray-400 uppercase tracking-wide">Model</span>
+                </div>
+                <div class="text-lg font-bold text-gray-800 truncate" id="stat-model">-</div>
+                <div class="text-sm text-gray-500">LLM Model</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Query Section -->
+            <div class="lg:col-span-2">
+                <div class="card rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                            <i data-lucide="search" class="w-5 h-5 text-purple-600"></i>
+                            RAG Query
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <!-- Query Mode Selection -->
+                        <div class="mb-4">
+                            <label class="text-sm text-gray-600 mb-2 block">Query Mode</label>
+                            <div class="flex gap-2">
+                                <button class="mode-btn px-4 py-2 rounded-lg text-sm font-medium" data-mode="naive">Naive</button>
+                                <button class="mode-btn px-4 py-2 rounded-lg text-sm font-medium" data-mode="local">Local</button>
+                                <button class="mode-btn px-4 py-2 rounded-lg text-sm font-medium" data-mode="global">Global</button>
+                                <button class="mode-btn px-4 py-2 rounded-lg text-sm font-medium active" data-mode="hybrid">Hybrid</button>
+                            </div>
+                        </div>
+
+                        <!-- Query Input -->
+                        <div class="relative mb-4">
+                            <textarea
+                                id="query-input"
+                                class="w-full p-4 pr-12 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                rows="3"
+                                placeholder="질문을 입력하세요... (예: LightRAG의 dual-level retrieval이란?)"
+                            ></textarea>
+                            <button
+                                onclick="submitQuery()"
+                                class="absolute right-3 bottom-3 w-10 h-10 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center justify-center transition"
+                            >
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Response Area -->
+                        <div id="response-area" class="hidden">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-500">Response</span>
+                                <span id="response-time" class="text-xs text-gray-400"></span>
+                            </div>
+                            <div id="response-content" class="bg-gray-50 rounded-xl p-4 text-gray-700 leading-relaxed max-h-64 overflow-y-auto">
+                            </div>
+                        </div>
+
+                        <!-- Loading -->
+                        <div id="loading-area" class="hidden">
+                            <div class="flex items-center justify-center py-8">
+                                <div class="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                                <span class="ml-3 text-gray-500">Processing query...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indexing Section -->
+                <div class="card rounded-2xl shadow-lg border border-gray-100 overflow-hidden mt-8">
+                    <div class="p-6 border-b border-gray-100">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                            <i data-lucide="folder-sync" class="w-5 h-5 text-blue-600"></i>
+                            Indexing
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex gap-4 mb-4">
+                            <input
+                                type="text"
+                                id="index-path"
+                                class="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value="/app/rag_raw_pdfs"
+                                placeholder="Path to index"
+                            >
+                            <button
+                                onclick="syncIndex()"
+                                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition flex items-center gap-2"
+                            >
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                Sync
+                            </button>
+                        </div>
+                        <div id="index-result" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-800">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indexed Files List -->
+            <div class="card rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                    <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                        <i data-lucide="files" class="w-5 h-5 text-green-600"></i>
+                        Indexed Files
+                    </h2>
+                    <button onclick="loadFiles()" class="text-gray-400 hover:text-gray-600">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="max-h-[600px] overflow-y-auto">
+                    <div id="files-list" class="divide-y divide-gray-100">
+                        <!-- Files will be loaded here -->
+                    </div>
+                    <div id="files-empty" class="hidden p-8 text-center text-gray-400">
+                        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                        <p>No indexed files</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Architecture Diagram -->
+        <div class="card rounded-2xl shadow-lg border border-gray-100 overflow-hidden mt-8">
+            <div class="p-6 border-b border-gray-100">
+                <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="git-branch" class="w-5 h-5 text-indigo-600"></i>
+                    LightRAG Architecture
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6">
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                        <!-- Input -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="file-text" class="w-8 h-8 text-blue-600"></i>
+                            </div>
+                            <div class="font-medium text-gray-700">PDF Documents</div>
+                            <div class="text-sm text-gray-500">Input</div>
+                        </div>
+
+                        <i data-lucide="arrow-right" class="w-6 h-6 text-gray-300 hidden md:block"></i>
+                        <i data-lucide="arrow-down" class="w-6 h-6 text-gray-300 md:hidden"></i>
+
+                        <!-- Knowledge Graph -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="share-2" class="w-8 h-8 text-purple-600"></i>
+                            </div>
+                            <div class="font-medium text-gray-700">Knowledge Graph</div>
+                            <div class="text-sm text-gray-500">Entities + Relations</div>
+                        </div>
+
+                        <i data-lucide="arrow-right" class="w-6 h-6 text-gray-300 hidden md:block"></i>
+                        <i data-lucide="arrow-down" class="w-6 h-6 text-gray-300 md:hidden"></i>
+
+                        <!-- Dual Retrieval -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="layers" class="w-8 h-8 text-indigo-600"></i>
+                            </div>
+                            <div class="font-medium text-gray-700">Dual-Level Retrieval</div>
+                            <div class="text-sm text-gray-500">Local + Global</div>
+                        </div>
+
+                        <i data-lucide="arrow-right" class="w-6 h-6 text-gray-300 hidden md:block"></i>
+                        <i data-lucide="arrow-down" class="w-6 h-6 text-gray-300 md:hidden"></i>
+
+                        <!-- LLM -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="sparkles" class="w-8 h-8 text-orange-600"></i>
+                            </div>
+                            <div class="font-medium text-gray-700">LLM Generation</div>
+                            <div class="text-sm text-gray-500">GPT-4o-mini</div>
+                        </div>
+
+                        <i data-lucide="arrow-right" class="w-6 h-6 text-gray-300 hidden md:block"></i>
+                        <i data-lucide="arrow-down" class="w-6 h-6 text-gray-300 md:hidden"></i>
+
+                        <!-- Output -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="message-circle" class="w-8 h-8 text-green-600"></i>
+                            </div>
+                            <div class="font-medium text-gray-700">Answer</div>
+                            <div class="text-sm text-gray-500">Context-aware</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-6 text-gray-400 text-sm">
+        <p>LightRAG Dashboard v0.2.0 | Knowledge Graph + Vector RAG</p>
+    </footer>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let selectedMode = 'hybrid';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            refreshAll();
+
+            // Mode button handlers
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedMode = btn.dataset.mode;
+                });
+            });
+
+            // Enter key for query
+            document.getElementById('query-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitQuery();
+                }
+            });
+        });
+
+        async function refreshAll() {
+            await Promise.all([loadStats(), loadFiles(), checkHealth()]);
+        }
+
+        async function checkHealth() {
+            try {
+                const res = await fetch(`${API_BASE}/health`);
+                const data = await res.json();
+                const statusEl = document.getElementById('health-status');
+                if (data.status === 'healthy') {
+                    statusEl.innerHTML = '<span class="w-2 h-2 bg-green-400 rounded-full pulse"></span><span class="text-sm">Healthy</span>';
+                } else {
+                    statusEl.innerHTML = '<span class="w-2 h-2 bg-yellow-400 rounded-full pulse"></span><span class="text-sm">Degraded</span>';
+                }
+            } catch (e) {
+                const statusEl = document.getElementById('health-status');
+                statusEl.innerHTML = '<span class="w-2 h-2 bg-red-400 rounded-full"></span><span class="text-sm">Offline</span>';
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_BASE}/stats`);
+                const data = await res.json();
+
+                document.getElementById('stat-files').textContent = data.tracked_files || 0;
+                document.getElementById('stat-docs').textContent = data.indexed_documents || 0;
+                document.getElementById('stat-size').textContent = formatBytes(data.tracked_size_bytes || 0);
+                document.getElementById('stat-model').textContent = data.model_name || '-';
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
+        async function loadFiles() {
+            try {
+                const res = await fetch(`${API_BASE}/index/files`);
+                const data = await res.json();
+
+                const listEl = document.getElementById('files-list');
+                const emptyEl = document.getElementById('files-empty');
+
+                if (data.files.length === 0) {
+                    listEl.innerHTML = '';
+                    emptyEl.classList.remove('hidden');
+                    return;
+                }
+
+                emptyEl.classList.add('hidden');
+                listEl.innerHTML = data.files.map(file => `
+                    <div class="file-item p-4 flex items-center gap-4">
+                        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="file-text" class="w-5 h-5 text-gray-500"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-gray-800 truncate" title="${file.file_name}">${file.file_name}</div>
+                            <div class="text-sm text-gray-400">${formatBytes(file.file_size)} • ${formatDate(file.indexed_at)}</div>
+                        </div>
+                        <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="check" class="w-4 h-4 text-green-600"></i>
+                        </div>
+                    </div>
+                `).join('');
+
+                lucide.createIcons();
+            } catch (e) {
+                console.error('Failed to load files:', e);
+            }
+        }
+
+        async function submitQuery() {
+            const input = document.getElementById('query-input');
+            const question = input.value.trim();
+
+            if (!question) return;
+
+            const responseArea = document.getElementById('response-area');
+            const loadingArea = document.getElementById('loading-area');
+            const responseContent = document.getElementById('response-content');
+            const responseTime = document.getElementById('response-time');
+
+            responseArea.classList.add('hidden');
+            loadingArea.classList.remove('hidden');
+
+            try {
+                const res = await fetch(`${API_BASE}/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question, mode: selectedMode })
+                });
+
+                const data = await res.json();
+
+                loadingArea.classList.add('hidden');
+                responseArea.classList.remove('hidden');
+
+                responseContent.textContent = data.answer;
+                responseTime.textContent = `${data.processing_time_ms.toFixed(0)}ms • ${data.mode} mode`;
+            } catch (e) {
+                loadingArea.classList.add('hidden');
+                responseArea.classList.remove('hidden');
+                responseContent.textContent = 'Error: Failed to get response. Please check if the server is running.';
+                responseTime.textContent = '';
+            }
+        }
+
+        async function syncIndex() {
+            const path = document.getElementById('index-path').value;
+            const resultEl = document.getElementById('index-result');
+
+            resultEl.classList.remove('hidden');
+            resultEl.className = 'bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-800';
+            resultEl.innerHTML = '<div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div> Syncing...</div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/index/local/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path, recursive: true })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    resultEl.className = 'bg-green-50 border border-green-200 rounded-xl p-4 text-green-800';
+                    resultEl.innerHTML = `<div class="flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5"></i> ${data.message}</div>`;
+                    await refreshAll();
+                } else {
+                    resultEl.className = 'bg-red-50 border border-red-200 rounded-xl p-4 text-red-800';
+                    resultEl.innerHTML = `<div class="flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> Failed: ${data.message}</div>`;
+                }
+                lucide.createIcons();
+            } catch (e) {
+                resultEl.className = 'bg-red-50 border border-red-200 rounded-xl p-4 text-red-800';
+                resultEl.innerHTML = '<div class="flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> Error: Server connection failed</div>';
+                lucide.createIcons();
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+    </script>
+</body>
+</html>

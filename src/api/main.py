@@ -3,8 +3,10 @@ FastAPI application entry point.
 """
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from .routes import query_router, index_router, sources_router
 from .routes import query, index, sources
@@ -93,11 +95,14 @@ async def root():
     """Root endpoint with API information."""
     return {
         "name": "LlamaHub + LightRAG API",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "docs": "/docs",
+        "dashboard": "/dashboard",
         "endpoints": {
             "query": "POST /query",
             "index_local": "POST /index/local",
+            "index_sync": "POST /index/local/sync",
+            "index_files": "GET /index/files",
             "index_gdrive": "POST /index/google-drive",
             "index_slack": "POST /index/slack",
             "index_notion": "POST /index/notion",
@@ -106,6 +111,23 @@ async def root():
             "health": "GET /health",
         }
     }
+
+
+@app.get("/dashboard")
+async def dashboard():
+    """Serve the dashboard HTML page."""
+    # Try multiple possible locations for dashboard.html
+    possible_paths = [
+        Path(__file__).parent.parent.parent / "dashboard.html",  # Project root
+        Path("/app/dashboard.html"),  # Docker container
+        Path("dashboard.html"),  # Current directory
+    ]
+
+    for dashboard_path in possible_paths:
+        if dashboard_path.exists():
+            return FileResponse(dashboard_path, media_type="text/html")
+
+    return {"error": "Dashboard not found", "tried_paths": [str(p) for p in possible_paths]}
 
 
 def run_server():

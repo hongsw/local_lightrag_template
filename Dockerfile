@@ -32,6 +32,7 @@ RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 # Copy application code
 COPY src/ ./src/
 COPY run.py .
+COPY dashboard.html .
 
 # Create directories for data
 RUN mkdir -p /app/rag_raw_pdfs /app/lightrag_data \
