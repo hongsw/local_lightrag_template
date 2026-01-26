@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-01-27
+
+### Added
+
+#### Incremental Indexing
+- **IndexTracker**: 파일 해시 기반 중복 인덱싱 방지
+- **Auto-skip**: 이미 인덱싱된 파일 자동 건너뛰기
+- **Change Detection**: 파일 내용 변경 감지 및 재인덱싱
+
+#### New API Endpoints
+- `POST /index/local/sync` - 새 파일만 인덱싱 (증분)
+- `GET /index/files` - 인덱싱된 파일 목록 조회
+- `POST /index/status` - 파일 인덱싱 상태 확인
+
+#### Enhanced Stats
+- `tracked_files` - 추적 중인 파일 수
+- `tracked_size_bytes` - 추적 파일 총 용량
+
+### Changed
+- `/index/local` 응답에 `documents_skipped` 필드 추가
+
+---
+
 ## [0.1.0] - 2025-01-27
 
 ### Added
