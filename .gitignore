@@ -30,6 +30,9 @@ Thumbs.db
 rag_raw_pdfs/*
 !rag_raw_pdfs/LIGHTRAG.2410.05779v3.pdf
 
+# Test PDF folder
+test_pdfs/
+
 # Test/Coverage
 .pytest_cache/
 .coverage

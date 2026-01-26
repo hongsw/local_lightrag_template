@@ -15,6 +15,8 @@ services:
     volumes:
       # PDF 파일 마운트
       - ./rag_raw_pdfs:/app/rag_raw_pdfs:ro
+      # 테스트용 PDF 폴더
+      - ./test_pdfs:/app/test_pdfs:ro
       # LightRAG 데이터 영속화
       - lightrag_data:/app/lightrag_data
     restart: unless-stopped
