@@ -6,6 +6,7 @@
     <title>LightRAG Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -24,6 +25,24 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
+        /* Markdown Styling */
+        .markdown-body h1 { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; color: #1f2937; }
+        .markdown-body h2 { font-size: 1.25rem; font-weight: 600; margin: 0.8rem 0 0.4rem; color: #374151; }
+        .markdown-body h3 { font-size: 1.1rem; font-weight: 600; margin: 0.6rem 0 0.3rem; color: #4b5563; }
+        .markdown-body p { margin: 0.5rem 0; line-height: 1.7; }
+        .markdown-body ul, .markdown-body ol { margin: 0.5rem 0; padding-left: 1.5rem; }
+        .markdown-body li { margin: 0.25rem 0; }
+        .markdown-body code { background: #e5e7eb; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.875rem; }
+        .markdown-body pre { background: #1f2937; color: #e5e7eb; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 0.5rem 0; }
+        .markdown-body pre code { background: transparent; padding: 0; }
+        .markdown-body blockquote { border-left: 4px solid #667eea; padding-left: 1rem; margin: 0.5rem 0; color: #6b7280; }
+        .markdown-body strong { font-weight: 600; color: #1f2937; }
+        .markdown-body a { color: #667eea; text-decoration: underline; }
+        .markdown-body table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
+        .markdown-body th, .markdown-body td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: left; }
+        .markdown-body th { background: #f9fafb; font-weight: 600; }
+        .source-card { transition: all 0.2s; }
+        .source-card:hover { background: #f3f4f6; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -141,10 +160,24 @@
                         <!-- Response Area -->
                         <div id="response-area" class="hidden">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm text-gray-500">Response</span>
-                                <span id="response-time" class="text-xs text-gray-400"></span>
+                                <span class="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="message-square" class="w-4 h-4 text-purple-600"></i>
+                                    Response
+                                </span>
+                                <span id="response-time" class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full"></span>
                             </div>
-                            <div id="response-content" class="bg-gray-50 rounded-xl p-4 text-gray-700 leading-relaxed max-h-64 overflow-y-auto">
+                            <div id="response-content" class="markdown-body bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 text-gray-700 leading-relaxed max-h-80 overflow-y-auto border border-gray-100 shadow-inner">
+                            </div>
+
+                            <!-- Sources Section -->
+                            <div id="sources-area" class="hidden mt-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i data-lucide="book-open" class="w-4 h-4 text-blue-600"></i>
+                                    <span class="text-sm font-medium text-gray-700">Sources</span>
+                                    <span id="sources-count" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"></span>
+                                </div>
+                                <div id="sources-list" class="space-y-2">
+                                </div>
                             </div>
                         </div>
 
@@ -397,8 +430,12 @@
             const loadingArea = document.getElementById('loading-area');
             const responseContent = document.getElementById('response-content');
             const responseTime = document.getElementById('response-time');
+            const sourcesArea = document.getElementById('sources-area');
+            const sourcesList = document.getElementById('sources-list');
+            const sourcesCount = document.getElementById('sources-count');
 
             responseArea.classList.add('hidden');
+            sourcesArea.classList.add('hidden');
             loadingArea.classList.remove('hidden');
 
             try {
@@ -413,13 +450,53 @@
                 loadingArea.classList.add('hidden');
                 responseArea.classList.remove('hidden');
 
-                responseContent.textContent = data.answer;
+                // Render Markdown
+                responseContent.innerHTML = marked.parse(data.answer);
                 responseTime.textContent = `${data.processing_time_ms.toFixed(0)}ms • ${data.mode} mode`;
+
+                // Display sources
+                if (data.sources && data.sources.length > 0) {
+                    sourcesArea.classList.remove('hidden');
+                    sourcesCount.textContent = `${data.sources.length}`;
+                    sourcesList.innerHTML = data.sources.map((source, idx) => `
+                        <div class="source-card bg-gray-50 rounded-lg p-3 border border-gray-100">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <span class="text-blue-700 font-semibold text-sm">${idx + 1}</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                                        <span class="font-medium text-gray-800 text-sm truncate" title="${source.file_name || 'Unknown'}">
+                                            <i data-lucide="file-text" class="w-3 h-3 inline mr-1"></i>
+                                            ${source.file_name || 'Unknown'}
+                                        </span>
+                                        ${source.page ? `
+                                            <span class="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                                                Page ${source.page}
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                    ${source.excerpt ? `
+                                        <div class="text-sm text-gray-600 leading-relaxed bg-white rounded p-2 border-l-2 border-purple-300">
+                                            <i data-lucide="quote" class="w-3 h-3 inline text-purple-400 mr-1"></i>
+                                            "${source.excerpt}"
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    lucide.createIcons();
+                } else {
+                    sourcesArea.classList.add('hidden');
+                }
+
             } catch (e) {
                 loadingArea.classList.add('hidden');
                 responseArea.classList.remove('hidden');
-                responseContent.textContent = 'Error: Failed to get response. Please check if the server is running.';
+                responseContent.innerHTML = '<p class="text-red-600">Error: Failed to get response. Please check if the server is running.</p>';
                 responseTime.textContent = '';
+                sourcesArea.classList.add('hidden');
             }
         }
 

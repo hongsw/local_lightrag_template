@@ -31,11 +31,18 @@ class QueryRequest(BaseModel):
     }
 
 
+class SourceReference(BaseModel):
+    """Reference to a source document."""
+    file_name: Optional[str] = Field(None, description="Name of the source file")
+    page: Optional[int] = Field(None, description="Page number in the document")
+    excerpt: Optional[str] = Field(None, description="Relevant excerpt from the source")
+
+
 class QueryResponse(BaseModel):
     """Response model for RAG queries."""
     answer: str
     mode: str
-    sources: list[dict[str, Any]] = []
+    sources: list[SourceReference] = []
     metadata: dict[str, Any] = {}
     processing_time_ms: float
 

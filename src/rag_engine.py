@@ -4,6 +4,7 @@ LightRAG engine wrapper for knowledge graph + vector RAG.
 
 import asyncio
 import os
+import re
 from pathlib import Path
 from typing import Optional
 from dataclasses import dataclass
@@ -216,6 +217,16 @@ class RAGEngine:
         try:
             from lightrag import QueryParam
 
+            # First, get the context to extract sources
+            context_result = await rag.aquery(
+                question,
+                param=QueryParam(mode=mode.value, only_need_context=True)
+            )
+
+            # Extract sources from context
+            sources = self._extract_sources_from_context(context_result)
+
+            # Then get the actual answer
             result = await rag.aquery(
                 question,
                 param=QueryParam(mode=mode.value)
@@ -224,10 +235,11 @@ class RAGEngine:
             return QueryResult(
                 answer=result,
                 mode=mode,
-                sources=[],  # LightRAG doesn't return sources directly
+                sources=sources,
                 metadata={
                     "query_mode": mode.value,
                     "working_dir": str(self.working_dir),
+                    "context_length": len(context_result) if context_result else 0,
                 },
             )
         except Exception as e:
@@ -237,6 +249,67 @@ class RAGEngine:
                 sources=[],
                 metadata={"error": str(e)},
             )
+
+    def _extract_sources_from_context(self, context: str) -> list[dict]:
+        """
+        Extract source information from LightRAG context.
+
+        Parses the context to find file names, page numbers, and relevant excerpts.
+        """
+        if not context:
+            return []
+
+        sources = []
+        seen_sources = set()
+
+        # Split context into chunks (LightRAG separates with various delimiters)
+        chunks = re.split(r'\n(?=\[Source:|-----)', context)
+
+        for chunk in chunks:
+            if not chunk.strip():
+                continue
+
+            source_info = {
+                "file_name": None,
+                "page": None,
+                "excerpt": None,
+            }
+
+            # Extract file name from [Source: filename.pdf]
+            source_match = re.search(r'\[Source:\s*([^\]]+)\]', chunk)
+            if source_match:
+                source_info["file_name"] = source_match.group(1).strip()
+
+            # Extract page number from [Page X] or [Page X]
+            page_match = re.search(r'\[Page\s*(\d+)\]', chunk)
+            if page_match:
+                source_info["page"] = int(page_match.group(1))
+
+            # Extract excerpt - clean text without metadata tags
+            excerpt = chunk
+            # Remove metadata tags
+            excerpt = re.sub(r'\[Source:[^\]]+\]', '', excerpt)
+            excerpt = re.sub(r'\[Type:[^\]]+\]', '', excerpt)
+            excerpt = re.sub(r'\[Page\s*\d+\]', '', excerpt)
+            excerpt = re.sub(r'-----+', '', excerpt)
+            excerpt = excerpt.strip()
+
+            # Truncate excerpt if too long
+            if len(excerpt) > 300:
+                excerpt = excerpt[:300] + "..."
+
+            source_info["excerpt"] = excerpt if excerpt else None
+
+            # Only add if we have meaningful content
+            if source_info["file_name"] and source_info["excerpt"]:
+                # Create unique key to avoid duplicates
+                source_key = f"{source_info['file_name']}:{source_info.get('page', 'N/A')}"
+                if source_key not in seen_sources:
+                    seen_sources.add(source_key)
+                    sources.append(source_info)
+
+        # Limit to top 5 sources
+        return sources[:5]
 
     def query_sync(
         self,
