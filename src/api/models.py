@@ -98,9 +98,47 @@ class IndexResponse(BaseModel):
     success: bool
     source_type: str
     documents_indexed: int
+    documents_skipped: int = 0
     documents_failed: int
     error_details: list[dict[str, Any]] = []
     message: str
+
+
+class IndexedFileInfo(BaseModel):
+    """Information about an indexed file."""
+    file_name: str
+    file_path: str
+    file_size: int
+    indexed_at: str
+    doc_count: int
+
+
+class IndexedFilesResponse(BaseModel):
+    """Response listing indexed files."""
+    files: list[IndexedFileInfo]
+    total: int
+    total_size_bytes: int
+
+
+class FileStatusRequest(BaseModel):
+    """Request to check file indexing status."""
+    file_paths: list[str] = Field(..., description="List of file paths to check")
+
+
+class FileStatusInfo(BaseModel):
+    """Status information for a single file."""
+    file_path: str
+    is_indexed: bool
+    needs_reindex: bool
+    reason: Optional[str] = None
+
+
+class FileStatusResponse(BaseModel):
+    """Response with file indexing status."""
+    files: list[FileStatusInfo]
+    total: int
+    indexed_count: int
+    pending_count: int
 
 
 # ============== Source Models ==============
@@ -145,6 +183,8 @@ class StatsResponse(BaseModel):
     embedding_model: str
     is_initialized: bool
     available_sources: list[str]
+    tracked_files: int = 0
+    tracked_size_bytes: int = 0
 
 
 # ============== Health Models ==============

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from .connectors.base import Document
+from .index_tracker import IndexTracker
 
 
 class QueryMode(str, Enum):
@@ -67,6 +68,12 @@ class RAGEngine:
         self._rag = None
         self._initialized = False
         self._indexed_count = 0
+        self._tracker = IndexTracker(self.working_dir)
+
+    @property
+    def tracker(self) -> IndexTracker:
+        """Get the index tracker."""
+        return self._tracker
 
     def _get_rag(self):
         """Lazy load the LightRAG instance."""
@@ -121,6 +128,7 @@ class RAGEngine:
         self,
         documents: list[Document],
         batch_size: int = 10,
+        skip_tracked: bool = True,
     ) -> dict:
         """
         Index documents into LightRAG.
@@ -128,33 +136,53 @@ class RAGEngine:
         Args:
             documents: List of documents to index.
             batch_size: Number of documents to process in each batch.
+            skip_tracked: Skip files that are already indexed (default: True).
 
         Returns:
             Indexing statistics.
         """
         rag = await self._ensure_initialized()
         indexed = 0
+        skipped = 0
         errors = []
+        indexed_files = set()
 
         for i in range(0, len(documents), batch_size):
             batch = documents[i:i + batch_size]
 
             for doc in batch:
                 try:
+                    # Check if file is already indexed
+                    if skip_tracked and doc.source_path:
+                        file_path = Path(doc.source_path)
+                        if self._tracker.is_indexed(file_path):
+                            skipped += 1
+                            continue
+
                     # Prepare text with metadata context
                     text_with_context = self._prepare_text_for_indexing(doc)
                     await rag.ainsert(text_with_context)
                     indexed += 1
+
+                    # Track the indexed file
+                    if doc.source_path:
+                        indexed_files.add(doc.source_path)
+
                 except Exception as e:
                     errors.append({
                         "doc_id": doc.doc_id,
                         "error": str(e),
                     })
 
+        # Update tracker for newly indexed files
+        for file_path in indexed_files:
+            self._tracker.mark_indexed(Path(file_path))
+
         self._indexed_count += indexed
 
         return {
             "indexed": indexed,
+            "skipped": skipped,
             "errors": len(errors),
             "error_details": errors[:10],  # Limit error details
             "total_indexed": self._indexed_count,
@@ -239,12 +267,15 @@ class RAGEngine:
 
     def get_stats(self) -> dict:
         """Get engine statistics."""
+        tracker_stats = self._tracker.get_stats()
         return {
             "working_dir": str(self.working_dir),
             "indexed_documents": self._indexed_count,
             "model_name": self.model_name,
             "embedding_model": self.embedding_model,
             "is_initialized": self._rag is not None,
+            "tracked_files": tracker_stats["total_indexed_files"],
+            "tracked_size_bytes": tracker_stats["total_size_bytes"],
         }
 
     def clear_index(self) -> bool:
@@ -261,6 +292,26 @@ class RAGEngine:
                 self.working_dir.mkdir(parents=True, exist_ok=True)
             self._rag = None
             self._indexed_count = 0
+            # Reinitialize tracker (creates empty tracker file)
+            self._tracker = IndexTracker(self.working_dir)
             return True
         except Exception:
             return False
+
+    def get_indexed_files(self) -> list[dict]:
+        """Get list of all indexed files."""
+        files = self._tracker.get_indexed_files()
+        return [
+            {
+                "file_name": f.file_name,
+                "file_path": f.file_path,
+                "file_size": f.file_size,
+                "indexed_at": f.indexed_at,
+                "doc_count": f.doc_count,
+            }
+            for f in files
+        ]
+
+    def is_file_indexed(self, file_path: str | Path) -> bool:
+        """Check if a specific file is already indexed."""
+        return self._tracker.is_indexed(Path(file_path))

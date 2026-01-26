@@ -7,6 +7,7 @@ LightRAG 기반 Knowledge Graph + Vector 검색을 지원하는 RAG(Retrieval-Au
 - **Knowledge Graph RAG**: LightRAG 엔진으로 벡터 검색과 Knowledge Graph를 결합
 - **다중 쿼리 모드**: naive, local, global, hybrid 모드 지원
 - **다양한 데이터 소스**: Local Files, Google Drive, Slack, Notion 커넥터
+- **증분 인덱싱**: 새 파일만 자동 감지하여 인덱싱 (중복 방지)
 - **FastAPI 기반**: 자동 API 문서화 (Swagger UI)
 - **문서 청킹**: 효율적인 문서 분할 및 처리
 - **컨테이너 지원**: Docker, Docker Compose, Kubernetes 배포 지원
@@ -301,6 +302,9 @@ LightRAG는 기존 RAG와 달리 **Knowledge Graph**를 활용하여 문서 간 
 |--------|----------|------|
 | POST | `/query` | RAG 쿼리 |
 | POST | `/index/local` | 로컬 파일 인덱싱 |
+| POST | `/index/local/sync` | 새 파일만 인덱싱 (증분) |
+| GET | `/index/files` | 인덱싱된 파일 목록 |
+| POST | `/index/status` | 파일 인덱싱 상태 확인 |
 | POST | `/index/google-drive` | Google Drive 인덱싱 |
 | POST | `/index/slack` | Slack 채널 인덱싱 |
 | POST | `/index/notion` | Notion 페이지 인덱싱 |

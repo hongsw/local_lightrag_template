@@ -30,6 +30,9 @@ python run.py serve
 | POST | `/query` | RAG 쿼리 |
 | GET | `/query/modes` | 쿼리 모드 목록 |
 | POST | `/index/local` | 로컬 파일 인덱싱 |
+| POST | `/index/local/sync` | 새 파일만 인덱싱 (증분) |
+| GET | `/index/files` | 인덱싱된 파일 목록 |
+| POST | `/index/status` | 파일 인덱싱 상태 확인 |
 | POST | `/index/google-drive` | Google Drive 인덱싱 |
 | POST | `/index/slack` | Slack 채널 인덱싱 |
 | POST | `/index/notion` | Notion 페이지 인덱싱 |
@@ -132,11 +135,128 @@ curl -X POST "http://localhost:8000/index/local" \
   "success": true,
   "source_type": "local_files",
   "documents_indexed": 150,
+  "documents_skipped": 0,
   "documents_failed": 0,
   "error_details": [],
-  "message": "Successfully indexed 150 document chunks from 5 files"
+  "message": "Indexed 150 chunks from 5 files"
 }
 ```
+
+### POST /index/local/sync
+
+새 파일 또는 변경된 파일만 인덱싱합니다 (증분 인덱싱).
+
+이미 인덱싱된 파일은 자동으로 건너뛰어 효율적입니다.
+
+**Request Body:**
+```json
+{
+  "path": "./rag_raw_pdfs",
+  "recursive": true
+}
+```
+
+**cURL 예시:**
+```bash
+curl -X POST "http://localhost:8000/index/local/sync" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "./rag_raw_pdfs",
+    "recursive": true
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "source_type": "local_files",
+  "documents_indexed": 50,
+  "documents_skipped": 100,
+  "documents_failed": 0,
+  "error_details": [],
+  "message": "Synced: indexed 50 chunks from 2 new files, skipped 3 already indexed"
+}
+```
+
+### GET /index/files
+
+인덱싱된 파일 목록을 반환합니다.
+
+```bash
+curl "http://localhost:8000/index/files"
+```
+
+**Response:**
+```json
+{
+  "files": [
+    {
+      "file_name": "document.pdf",
+      "file_path": "/app/rag_raw_pdfs/document.pdf",
+      "file_size": 1024000,
+      "indexed_at": "2025-01-26T10:30:00.000Z",
+      "doc_count": 30
+    }
+  ],
+  "total": 5,
+  "total_size_bytes": 5120000
+}
+```
+
+### POST /index/status
+
+특정 파일들의 인덱싱 상태를 확인합니다.
+
+**Request Body:**
+```json
+{
+  "file_paths": [
+    "./rag_raw_pdfs/doc1.pdf",
+    "./rag_raw_pdfs/doc2.pdf"
+  ]
+}
+```
+
+**cURL 예시:**
+```bash
+curl -X POST "http://localhost:8000/index/status" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "file_paths": ["./rag_raw_pdfs/doc1.pdf", "./rag_raw_pdfs/new_doc.pdf"]
+  }'
+```
+
+**Response:**
+```json
+{
+  "files": [
+    {
+      "file_path": "./rag_raw_pdfs/doc1.pdf",
+      "is_indexed": true,
+      "needs_reindex": false,
+      "reason": null
+    },
+    {
+      "file_path": "./rag_raw_pdfs/new_doc.pdf",
+      "is_indexed": false,
+      "needs_reindex": true,
+      "reason": "new_file"
+    }
+  ],
+  "total": 2,
+  "indexed_count": 1,
+  "pending_count": 1
+}
+```
+
+**reason 값:**
+| 값 | 설명 |
+|------|------|
+| `null` | 인덱싱됨, 변경 없음 |
+| `new_file` | 새 파일 |
+| `content_changed` | 내용이 변경됨 |
+| `file_not_found` | 파일이 존재하지 않음 |
 
 ### POST /index/google-drive
 
