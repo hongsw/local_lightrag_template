@@ -225,17 +225,30 @@ docker compose up -d
 docker compose logs -f
 ```
 
-## 타 프레임워크와 비교
+## 타 프레임워크와 비교 (10개)
 
-| 기능 | Korea Tech RAG | LightRAG | GraphRAG | LangChain |
-|------|---------------|----------|----------|-----------|
-| **Knowledge Graph** | ✅ (LightRAG 기반) | ✅ | ✅ | ❌ |
-| **자동 인용 검증** | ✅ | ❌ | ❌ | ❌ |
-| **인용 자동 정정** | ✅ | ❌ | ❌ | ❌ |
-| **웹 대시보드** | ✅ | ❌ | ❌ | ❌ |
-| **REST API** | ✅ | ❌ | ❌ | 수동 구현 |
-| **검색 지연시간** | ~100ms | ~80ms | ~120ms+ | 가변 |
-| **인덱싱 비용** | 중간 | 중간 | 높음 | 낮음 |
+| 프레임워크 | Knowledge Graph | 인용 검증 | 자동 정정 | 웹 UI | 사용 편의성 |
+|-----------|-----------------|----------|----------|-------|-----------|
+| **Korea Tech RAG** | ✅ (경량) | ✅ | ✅ | ✅ | 쉬움 |
+| LightRAG | ✅ (경량) | ❌ | ❌ | ❌ | 쉬움 |
+| GraphRAG | ✅ (전체) | ❌ | ❌ | ❌ | 어려움 |
+| LangChain | 플러그인 | ❌ | ❌ | ❌ | 어려움 |
+| LlamaIndex | 플러그인 | ❌ | ❌ | ❌ | 보통 |
+| Haystack | ❌ | ❌ | ❌ | 제한적 | 보통 |
+| DSPy | ❌ | ❌ | ❌ | ❌ | 어려움 |
+| RAGFlow | ❌ | ❌ | ❌ | ✅ | 쉬움 |
+| Dify | ❌ | ❌ | ❌ | ✅ | 쉬움 |
+| Kotaemon | GraphRAG 통합 | ❌ | ❌ | ✅ | 쉬움 |
+
+### 기능별 1위 프레임워크
+
+| 카테고리 | 1위 | 이유 |
+|---------|-----|------|
+| **인용 정확성** | Korea Tech RAG | 유일한 자동 인용 검증+정정 |
+| **Knowledge Graph** | GraphRAG | 가장 깊은 그래프 분석 |
+| **사용 편의성** | Dify | 로우코드, 풀 UI |
+| **생태계** | LangChain | 95k+ stars |
+| **문서 파싱** | RAGFlow | 심층 문서 이해 |
 
 ### 차별점
 
@@ -251,7 +264,7 @@ docker compose logs -f
 - ✅ 팩트체크가 중요한 도메인
 - 🎓 교육 자료 기반 질의응답
 
-자세한 비교는 [COMPARISON.md](docs/COMPARISON.md) 참조
+자세한 10개 프레임워크 비교는 [COMPARISON.md](docs/COMPARISON.md) 참조
 
 ## 기술 스택
 
