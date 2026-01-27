@@ -1356,7 +1356,11 @@
                     }
                     responseTime.textContent = timeText;
 
-                    displaySources(data.sources, sourcesArea, sourcesList, sourcesCount);
+                    // Filter sources to only show those that weren't removed
+                    const filteredSources = data.sources.filter((_, idx) =>
+                        !data.removed_citations.includes(idx + 1)
+                    );
+                    displaySources(filteredSources, sourcesArea, sourcesList, sourcesCount, data.removed_citations);
                     displayVerificationLog(data.verification_log, data.accuracy_rate, data.processing_time_ms);
 
                 } else {
