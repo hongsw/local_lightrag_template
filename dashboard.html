@@ -585,6 +585,84 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Second Row: Performance Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                <!-- Slot Performance -->
+                <div class="card rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                            <i data-lucide="gauge" class="w-5 h-5 text-orange-600"></i>
+                            Slot Performance
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1">응답 시간 및 비용 비교</p>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="slot-performance-chart" height="200"></canvas>
+                        <div id="slot-performance-empty" class="hidden text-center text-gray-400 py-8">
+                            <i data-lucide="bar-chart" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                            <p>데이터가 없습니다. 쿼리를 실행해보세요.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strategy Performance -->
+                <div class="card rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                            <i data-lucide="target" class="w-5 h-5 text-blue-600"></i>
+                            Strategy Performance
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1">검색 전략별 성능 비교</p>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="strategy-performance-chart" height="200"></canvas>
+                        <div id="strategy-performance-empty" class="hidden text-center text-gray-400 py-8">
+                            <i data-lucide="bar-chart" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                            <p>데이터가 없습니다. 쿼리를 실행해보세요.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Third Row: Trends and Distribution -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                <!-- Accuracy Trend -->
+                <div class="card rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
+                            Accuracy Trend
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1">인용 정확도 추이</p>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="accuracy-trend-chart" height="200"></canvas>
+                        <div id="accuracy-trend-empty" class="hidden text-center text-gray-400 py-8">
+                            <i data-lucide="line-chart" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                            <p>데이터가 없습니다. Auto-Verify 모드로 쿼리해보세요.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Query Type Distribution -->
+                <div class="card rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="w-5 h-5 text-violet-600"></i>
+                            Query Type Distribution
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1">질문 유형별 분포</p>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="query-type-chart" height="200"></canvas>
+                        <div id="query-type-empty" class="hidden text-center text-gray-400 py-8">
+                            <i data-lucide="pie-chart" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                            <p>데이터가 없습니다. Adaptive 모드로 쿼리해보세요.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Tab Content: Files -->
@@ -614,7 +692,7 @@
 
     <!-- Footer -->
     <footer class="text-center py-6 text-gray-400 text-sm">
-        <p>OKT-RAG Dashboard v0.3.0 | Open Korea Tech RAG Platform</p>
+        <p>OKT-RAG Dashboard v0.4.0 | Open Korea Tech RAG Platform</p>
     </footer>
 
     <script>
@@ -624,6 +702,10 @@
         let currentSources = [];
         let strategyChart = null;
         let slotChart = null;
+        let slotPerformanceChart = null;
+        let strategyPerformanceChart = null;
+        let accuracyTrendChart = null;
+        let queryTypeChart = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -889,8 +971,216 @@
                 updateStrategyChart(retrieval.search_strategy_distribution || {});
                 updateSlotChart(retrieval.slot_usage || {});
 
+                // Load additional analytics
+                loadSlotPerformance();
+                loadStrategyPerformance();
+                loadAccuracyTrend();
+                loadQueryTypeDistribution();
+
             } catch (e) {
                 console.error('Failed to load analytics:', e);
+            }
+        }
+
+        async function loadSlotPerformance() {
+            try {
+                const res = await fetch(`${API_BASE}/analytics/slots/performance`);
+                const data = await res.json();
+
+                const canvas = document.getElementById('slot-performance-chart');
+                const emptyDiv = document.getElementById('slot-performance-empty');
+
+                if (!data || data.length === 0) {
+                    canvas.style.display = 'none';
+                    emptyDiv.classList.remove('hidden');
+                    return;
+                }
+
+                canvas.style.display = 'block';
+                emptyDiv.classList.add('hidden');
+
+                const ctx = canvas.getContext('2d');
+                if (slotPerformanceChart) slotPerformanceChart.destroy();
+
+                slotPerformanceChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(d => d.slot_name),
+                        datasets: [
+                            {
+                                label: 'Avg Time (ms)',
+                                data: data.map(d => d.avg_time_ms),
+                                backgroundColor: '#6366f1',
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Query Count',
+                                data: data.map(d => d.query_count),
+                                backgroundColor: '#10b981',
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom' } },
+                        scales: {
+                            y: { type: 'linear', position: 'left', title: { display: true, text: 'Time (ms)' } },
+                            y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Count' } }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Failed to load slot performance:', e);
+            }
+        }
+
+        async function loadStrategyPerformance() {
+            try {
+                const res = await fetch(`${API_BASE}/analytics/strategies/performance`);
+                const data = await res.json();
+
+                const canvas = document.getElementById('strategy-performance-chart');
+                const emptyDiv = document.getElementById('strategy-performance-empty');
+
+                if (!data || data.length === 0) {
+                    canvas.style.display = 'none';
+                    emptyDiv.classList.remove('hidden');
+                    return;
+                }
+
+                canvas.style.display = 'block';
+                emptyDiv.classList.add('hidden');
+
+                const ctx = canvas.getContext('2d');
+                if (strategyPerformanceChart) strategyPerformanceChart.destroy();
+
+                strategyPerformanceChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(d => d.strategy),
+                        datasets: [
+                            {
+                                label: 'Avg Time (ms)',
+                                data: data.map(d => d.avg_time_ms),
+                                backgroundColor: '#8b5cf6'
+                            },
+                            {
+                                label: 'Accuracy (%)',
+                                data: data.map(d => (d.avg_accuracy || 0) * 100),
+                                backgroundColor: '#f59e0b'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom' } },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Failed to load strategy performance:', e);
+            }
+        }
+
+        async function loadAccuracyTrend() {
+            try {
+                const res = await fetch(`${API_BASE}/analytics/accuracy/trend?granularity=day`);
+                const data = await res.json();
+
+                const canvas = document.getElementById('accuracy-trend-chart');
+                const emptyDiv = document.getElementById('accuracy-trend-empty');
+
+                if (!data.data || data.data.length === 0) {
+                    canvas.style.display = 'none';
+                    emptyDiv.classList.remove('hidden');
+                    return;
+                }
+
+                canvas.style.display = 'block';
+                emptyDiv.classList.add('hidden');
+
+                const ctx = canvas.getContext('2d');
+                if (accuracyTrendChart) accuracyTrendChart.destroy();
+
+                accuracyTrendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.data.map(d => d.timestamp),
+                        datasets: [{
+                            label: 'Citation Accuracy (%)',
+                            data: data.data.map(d => (d.accuracy || 0) * 100),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom' } },
+                        scales: {
+                            y: { beginAtZero: true, max: 100, title: { display: true, text: 'Accuracy (%)' } }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Failed to load accuracy trend:', e);
+            }
+        }
+
+        async function loadQueryTypeDistribution() {
+            try {
+                const res = await fetch(`${API_BASE}/analytics/query-types`);
+                const data = await res.json();
+
+                const canvas = document.getElementById('query-type-chart');
+                const emptyDiv = document.getElementById('query-type-empty');
+
+                if (!data.distribution || Object.keys(data.distribution).length === 0) {
+                    canvas.style.display = 'none';
+                    emptyDiv.classList.remove('hidden');
+                    return;
+                }
+
+                canvas.style.display = 'block';
+                emptyDiv.classList.add('hidden');
+
+                const ctx = canvas.getContext('2d');
+                if (queryTypeChart) queryTypeChart.destroy();
+
+                const labels = Object.keys(data.distribution);
+                const values = Object.values(data.distribution);
+                const colors = {
+                    'factual': '#3b82f6',
+                    'analytical': '#8b5cf6',
+                    'comparative': '#f59e0b',
+                    'procedural': '#10b981',
+                    'unknown': '#6b7280'
+                };
+
+                queryTypeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+                        datasets: [{
+                            data: values,
+                            backgroundColor: labels.map(l => colors[l] || '#6b7280'),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            title: { display: true, text: `Total: ${data.total} queries` }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Failed to load query type distribution:', e);
             }
         }
 
