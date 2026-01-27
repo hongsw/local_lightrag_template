@@ -338,6 +338,99 @@
 | **커스텀 파이프라인** | LangChain | 최대 유연성 |
 | **프롬프트 연구** | DSPy | 학술적 접근 |
 
+## 인용 정확성(Citation Accuracy) 학술 용어 및 기능 비교
+
+> 10번 반복 검색을 통해 수집한 학술 용어 및 각 프레임워크의 관련 기능 비교
+
+### 학술 용어 정의
+
+| 용어 (영문) | 한국어 | 정의 | 출처 |
+|------------|--------|------|------|
+| **Citation Hallucination** | 인용 환각 | 모델이 주장을 뒷받침하지 않는 출처를 인용하는 기만적 실패 | [FACTUM, arXiv 2601.05866](https://arxiv.org/abs/2601.05866) |
+| **Faithfulness** | 충실도 | 응답이 검색된 컨텍스트와 사실적으로 얼마나 일치하는지 (0~1) | [RAGAS](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/) |
+| **Groundedness** | 근거성 | RAG 파이프라인이 생성한 답변이 검색된 문서에 의해 지지되는 정도 | [deepset Blog](https://www.deepset.ai/blog/rag-llm-evaluation-groundedness) |
+| **Source Attribution** | 출처 귀속 | 응답의 각 사실을 검색된 문서에 연결하는 것 | [Confident AI](https://www.confident-ai.com/blog/rag-evaluation-metrics-answer-relevancy-faithfulness-and-more) |
+| **Citation Faithfulness** | 인용 충실도 | 인용된 문서에 대한 모델의 의존이 진짜인지 사후 합리화인지 | [ACM ICTIR 2025](https://dl.acm.org/doi/10.1145/3731120.3744592) |
+| **Claim Verification** | 주장 검증 | 응답을 원자적 주장으로 분해하여 각각 검증 | [MedRAGChecker, arXiv](https://arxiv.org/html/2601.06519) |
+| **Entity Grounding** | 엔티티 근거 | 응답의 엔티티가 소스 문서에 존재하는지 측정 | [HalluGraph, arXiv](https://arxiv.org/abs/2512.01659) |
+| **Relation Preservation** | 관계 보존 | 주장된 관계가 컨텍스트에 의해 지지되는지 검증 | [HalluGraph, arXiv](https://arxiv.org/abs/2512.01659) |
+| **Post-Correction** | 사후 정정 | 생성 후 사실적 오류를 검색으로 검증하고 수정 | [RAC, arXiv](https://arxiv.org/html/2410.15667) |
+| **Self-Verification** | 자기 검증 | LLM이 자신의 응답을 검증하도록 프롬프트 | [arXiv 2505.09031](https://arxiv.org/abs/2505.09031) |
+| **Context Precision** | 컨텍스트 정밀도 | 관련 청크가 상위에 랭킹되는 정도 | [RAGAS](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/context_precision/) |
+| **Context Recall** | 컨텍스트 재현율 | 필요한 모든 정보가 검색되었는지 측정 | [RAGAS](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/) |
+
+### Korea Tech RAG 용어 매핑
+
+| Korea Tech RAG 기능 | 학술 용어 | 설명 |
+|-------------------|----------|------|
+| **자동 인용 검증** | Claim Verification + Citation Faithfulness | 각 [†N] 인용을 소스와 대조 검증 |
+| **부정확 인용 제거** | Post-Correction | 검증 실패한 인용 자동 제거 및 번호 재정렬 |
+| **검증 로그** | Entity Grounding + Relation Preservation | 각 주장의 정확도, 신뢰도, 설명 기록 |
+| **소스 기반 프롬프트** | Groundedness Enforcement | 제공된 출처만 사용하도록 강제 |
+| **신뢰도 임계값** | Faithfulness Threshold | confidence ≥ 0.7 기준 판정 |
+
+### 인용 정확성 기능 상세 비교
+
+| 기능 | Korea Tech RAG | Dify | RAGFlow | LlamaIndex | LangChain | Haystack | Kotaemon |
+|-----|---------------|------|---------|------------|-----------|----------|----------|
+| **인라인 인용** | ✅ [†N] 자동 | ✅ | ✅ 하이라이트 | 수동 구현 | 수동 구현 | 수동 구현 | ✅ |
+| **인용 검증 (Claim Verification)** | ✅ LLM 기반 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **자동 정정 (Post-Correction)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **충실도 측정 (Faithfulness)** | ✅ confidence score | ❌ | ❌ | RAGAS 통합 | RAGAS 통합 | ✅ Groundedness Score | ❌ |
+| **출처 귀속 (Source Attribution)** | ✅ 파일+페이지 | ✅ | ✅ 페이지+위치 | 메타데이터 | 메타데이터 | 메타데이터 | ✅ 페이지 |
+| **검증 로그** | ✅ 실시간 | ❌ | ❌ | ❌ | LangSmith | ❌ | ❌ |
+| **환각 탐지 (Hallucination Detection)** | ✅ 검증 기반 | ❌ | ❌ | 외부 도구 | 외부 도구 | ❌ | ❌ |
+
+### 학술 연구 기반 검증 방법론 비교
+
+| 방법론 | 설명 | 적용 프레임워크 | 정확도 향상 |
+|-------|------|---------------|------------|
+| **FACTUM** | Attention + FFN 경로 분석으로 인용 환각 탐지 | 연구용 | AUC +37.5% |
+| **ReDeEP** (ICLR 2025) | 외부 컨텍스트/파라메트릭 지식 분리 | 연구용 | - |
+| **HalluGraph** | 지식 그래프 정렬로 환각 정량화 | 법률 RAG | 감사 가능 |
+| **MedRAGChecker** | 주장 레벨 검증 + 의료 KG 일관성 | 의료 RAG | - |
+| **RAC** | 검색 증강 사후 정정 | 범용 | +30% |
+| **Self-Verification** | LLM 자기 검증 + 다수결 | 범용 | TruthfulQA 최고 |
+| **RAGAS** | Faithfulness, Context Precision/Recall | LlamaIndex, LangChain, Haystack | 표준 메트릭 |
+| **Korea Tech RAG** | LLM 기반 인용 검증 + 자동 정정 | **본 프로젝트** | 실시간 검증 |
+
+### 인용 정확성 기능 요약
+
+| 프레임워크 | 인용 표기 | 검증 방식 | 정정 방식 | 검증 수준 |
+|-----------|---------|----------|----------|----------|
+| **Korea Tech RAG** | [†N] 자동 | LLM 기반 실시간 검증 | 자동 제거+재정렬 | **문장 레벨** |
+| Dify | 자동 | 없음 | 없음 | - |
+| RAGFlow | 하이라이트 | 없음 | 없음 | - |
+| LlamaIndex | 수동 | RAGAS 통합 (배치) | 없음 | 응답 레벨 |
+| LangChain | 수동 | RAGAS/외부 도구 (배치) | 없음 | 응답 레벨 |
+| Haystack | 수동 | Groundedness Score | 없음 | 응답 레벨 |
+| Kotaemon | 자동 | 없음 | 없음 | - |
+| GraphRAG | Entity 기반 | 없음 | 없음 | - |
+| LightRAG | 없음 | 없음 | 없음 | - |
+| DSPy | 없음 | 없음 | 없음 | - |
+
+### 핵심 차별점: 실시간 vs 배치 검증
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    인용 검증 방식 비교                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  [배치 평가]                    [실시간 검증]                             │
+│                                                                         │
+│  • RAGAS (LlamaIndex, LangChain)  • Korea Tech RAG                      │
+│  • 사후 품질 평가                  • 응답 생성 시 즉시 검증                 │
+│  • 개발/테스트 단계 사용            • 프로덕션 사용                         │
+│  • 수동 개선 필요                  • 자동 정정 포함                        │
+│                                                                         │
+│  사용 사례:                       사용 사례:                              │
+│  - RAG 파이프라인 품질 측정         - 팩트체크 필수 도메인                   │
+│  - A/B 테스트                     - 학술/법률 문서 QA                      │
+│  - 모델 비교                      - 실시간 신뢰성 보장                      │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
 ## LightRAG vs GraphRAG 상세 비교
 
 | 항목 | LightRAG | GraphRAG |
@@ -413,3 +506,15 @@ Korea Tech RAG:
 - [Best RAG Frameworks 2025](https://latenode.com/blog/best-rag-frameworks-2025-complete-enterprise-and-open-source-comparison)
 - [Top 10 RAG Frameworks GitHub Repos 2025](https://rowanblackwoon.medium.com/top-10-rag-frameworks-github-repos-2025-dba899ae0355)
 - [Compare Top 7 RAG Frameworks 2025](https://pathway.com/rag-frameworks/)
+
+### 인용 정확성 관련 학술 자료
+
+- [FACTUM: Mechanistic Detection of Citation Hallucination](https://arxiv.org/abs/2601.05866)
+- [HalluGraph: Auditable Hallucination Detection for Legal RAG](https://arxiv.org/abs/2512.01659)
+- [MedRAGChecker: Claim-Level Verification for Biomedical RAG](https://arxiv.org/html/2601.06519)
+- [RAC: Efficient LLM Factuality Correction with Retrieval Augmentation](https://arxiv.org/html/2410.15667)
+- [Improving LLM Reliability: CoT, RAG, Self-Consistency, Self-Verification](https://arxiv.org/abs/2505.09031)
+- [RAGAS: Faithfulness Metric](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/)
+- [deepset: Measuring LLM Groundedness](https://www.deepset.ai/blog/rag-llm-evaluation-groundedness)
+- [Correctness is not Faithfulness in RAG Attributions](https://dl.acm.org/doi/10.1145/3731120.3744592)
+- [Legal RAG Hallucinations Study (Stanford)](https://dho.stanford.edu/wp-content/uploads/Legal_RAG_Hallucinations.pdf)
