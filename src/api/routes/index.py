@@ -46,6 +46,7 @@ def get_processor():
 @router.post("/local", response_model=IndexResponse)
 async def index_local_files(
     request: IndexLocalRequest,
+    force: bool = False,
     rag_engine: RAGEngine = Depends(get_rag_engine),
     processor: DocumentProcessor = Depends(get_processor),
 ):
@@ -53,6 +54,9 @@ async def index_local_files(
     Index local files (PDF, TXT, MD).
 
     Scans the specified directory for supported files and indexes them.
+
+    Query params:
+        force: If True, re-index all files even if already tracked.
     """
     try:
         connector = LocalFilesConnector(base_path=request.path)
@@ -77,13 +81,15 @@ async def index_local_files(
         # Process (chunk) documents
         processed_docs = processor.process_documents(documents)
 
-        # Index into LightRAG
-        result = await rag_engine.index_documents(processed_docs)
+        # Index into LightRAG (skip_tracked=False if force)
+        result = await rag_engine.index_documents(processed_docs, skip_tracked=not force)
 
         skipped = result.get("skipped", 0)
         message = f"Indexed {result['indexed']} chunks from {len(documents)} files"
         if skipped > 0:
             message += f" (skipped {skipped} already indexed)"
+        if force:
+            message += " (force mode)"
 
         return IndexResponse(
             success=True,
@@ -308,6 +314,73 @@ async def clear_index(
         raise HTTPException(
             status_code=500,
             detail="Failed to clear index"
+        )
+
+
+@router.post("/rebuild", response_model=IndexResponse)
+async def rebuild_index(
+    request: IndexLocalRequest,
+    rag_engine: RAGEngine = Depends(get_rag_engine),
+    processor: DocumentProcessor = Depends(get_processor),
+):
+    """
+    Rebuild index from scratch.
+
+    This will:
+    1. Clear all existing indexed data
+    2. Re-index all files from the specified directory
+
+    Warning: This permanently deletes all existing indexed data before re-indexing.
+    """
+    try:
+        # Step 1: Clear existing index
+        success = rag_engine.clear_index()
+        if not success:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to clear existing index"
+            )
+
+        # Step 2: Load and index all documents
+        connector = LocalFilesConnector(base_path=request.path)
+
+        is_valid, error = connector.validate_config()
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=error)
+
+        documents = connector.load_documents()
+
+        if not documents:
+            return IndexResponse(
+                success=True,
+                source_type="local_files",
+                documents_indexed=0,
+                documents_failed=0,
+                message="Index cleared. No documents found to re-index.",
+            )
+
+        # Process (chunk) documents
+        processed_docs = processor.process_documents(documents)
+
+        # Index into LightRAG (skip_tracked=False since we cleared)
+        result = await rag_engine.index_documents(processed_docs, skip_tracked=False)
+
+        return IndexResponse(
+            success=True,
+            source_type="local_files",
+            documents_indexed=result["indexed"],
+            documents_skipped=0,
+            documents_failed=result["errors"],
+            error_details=result.get("error_details", []),
+            message=f"Rebuilt index: {result['indexed']} chunks from {len(documents)} files",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Rebuild failed: {str(e)}"
         )
 
 

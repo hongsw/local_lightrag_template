@@ -141,6 +141,18 @@
                             </div>
                         </div>
 
+                        <!-- Auto-Verify Toggle -->
+                        <div class="mb-4 flex items-center gap-3">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="auto-verify-toggle" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            </label>
+                            <div>
+                                <span class="text-sm font-medium text-gray-700">Auto-Verify Mode</span>
+                                <p class="text-xs text-gray-500">자동으로 인용을 검증하고 부정확한 인용은 제거합니다</p>
+                            </div>
+                        </div>
+
                         <!-- Query Input -->
                         <div class="relative mb-4">
                             <textarea
@@ -163,20 +175,64 @@
                                 <span class="text-sm font-medium text-gray-700 flex items-center gap-2">
                                     <i data-lucide="message-square" class="w-4 h-4 text-purple-600"></i>
                                     Response
+                                    <span id="verified-badge" class="hidden text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <i data-lucide="shield-check" class="w-3 h-3"></i>
+                                        Verified
+                                    </span>
                                 </span>
                                 <span id="response-time" class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full"></span>
                             </div>
-                            <div id="response-content" class="markdown-body bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 text-gray-700 leading-relaxed max-h-80 overflow-y-auto border border-gray-100 shadow-inner">
+
+                            <!-- Removed Citations Notice -->
+                            <div id="removed-citations-notice" class="hidden mb-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                                    <span class="text-sm font-medium">부정확한 인용이 자동으로 제거되었습니다</span>
+                                </div>
+                                <div id="removed-citations-list" class="text-xs text-amber-600 mt-1"></div>
+                            </div>
+
+                            <div id="response-content" class="markdown-body bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 text-gray-700 leading-relaxed max-h-[600px] overflow-y-auto border border-gray-100 shadow-inner">
                             </div>
 
                             <!-- Sources Section -->
                             <div id="sources-area" class="hidden mt-4">
-                                <div class="flex items-center gap-2 mb-3">
-                                    <i data-lucide="book-open" class="w-4 h-4 text-blue-600"></i>
-                                    <span class="text-sm font-medium text-gray-700">Sources</span>
-                                    <span id="sources-count" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"></span>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="book-open" class="w-4 h-4 text-blue-600"></i>
+                                        <span class="text-sm font-medium text-gray-700">Sources</span>
+                                        <span id="sources-count" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"></span>
+                                    </div>
+                                    <button
+                                        onclick="verifyCitations()"
+                                        class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg font-medium transition flex items-center gap-1.5"
+                                    >
+                                        <i data-lucide="shield-check" class="w-4 h-4"></i>
+                                        Verify Citations
+                                    </button>
                                 </div>
                                 <div id="sources-list" class="space-y-2">
+                                </div>
+                            </div>
+
+                            <!-- Verification Results Section -->
+                            <div id="verification-area" class="hidden mt-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i>
+                                    <span class="text-sm font-medium text-gray-700">Citation Verification</span>
+                                    <span id="verify-accuracy" class="text-xs px-2 py-0.5 rounded-full"></span>
+                                </div>
+                                <div id="verification-summary" class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 mb-3 border border-amber-100">
+                                </div>
+                                <div id="verification-list" class="space-y-2 max-h-96 overflow-y-auto">
+                                </div>
+                            </div>
+
+                            <!-- Verification Loading -->
+                            <div id="verify-loading" class="hidden mt-4">
+                                <div class="flex items-center justify-center py-4 bg-amber-50 rounded-lg">
+                                    <div class="w-5 h-5 border-2 border-amber-200 border-t-amber-600 rounded-full animate-spin"></div>
+                                    <span class="ml-2 text-amber-700 text-sm">Verifying citations...</span>
                                 </div>
                             </div>
                         </div>
@@ -205,7 +261,7 @@
                                 type="text"
                                 id="index-path"
                                 class="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value="/app/rag_raw_pdfs"
+                                value="./rag_raw_pdfs"
                                 placeholder="Path to index"
                             >
                             <button
@@ -215,7 +271,19 @@
                                 <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                                 Sync
                             </button>
+                            <button
+                                onclick="rebuildIndex()"
+                                class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition flex items-center gap-2"
+                                title="Clear and rebuild entire index"
+                            >
+                                <i data-lucide="database" class="w-4 h-4"></i>
+                                Rebuild
+                            </button>
                         </div>
+                        <p class="text-xs text-gray-500 mb-3">
+                            <strong>Sync:</strong> Index new/changed files only |
+                            <strong>Rebuild:</strong> Clear all data and re-index everything
+                        </p>
                         <div id="index-result" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-800">
                         </div>
                     </div>
@@ -326,6 +394,8 @@
     <script>
         const API_BASE = 'http://localhost:8000';
         let selectedMode = 'hybrid';
+        let currentAnswer = '';
+        let currentSources = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -423,6 +493,7 @@
         async function submitQuery() {
             const input = document.getElementById('query-input');
             const question = input.value.trim();
+            const autoVerify = document.getElementById('auto-verify-toggle').checked;
 
             if (!question) return;
 
@@ -433,62 +504,76 @@
             const sourcesArea = document.getElementById('sources-area');
             const sourcesList = document.getElementById('sources-list');
             const sourcesCount = document.getElementById('sources-count');
+            const verifiedBadge = document.getElementById('verified-badge');
+            const removedCitationsNotice = document.getElementById('removed-citations-notice');
+            const removedCitationsList = document.getElementById('removed-citations-list');
 
             responseArea.classList.add('hidden');
             sourcesArea.classList.add('hidden');
             loadingArea.classList.remove('hidden');
+            verifiedBadge.classList.add('hidden');
+            removedCitationsNotice.classList.add('hidden');
+            document.getElementById('verification-area').classList.add('hidden');
 
             try {
-                const res = await fetch(`${API_BASE}/query`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question, mode: selectedMode })
-                });
+                let data;
+                if (autoVerify) {
+                    // Use verified endpoint
+                    const res = await fetch(`${API_BASE}/query/verified`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ question, mode: selectedMode, confidence_threshold: 0.7 })
+                    });
+                    data = await res.json();
 
-                const data = await res.json();
+                    // Store for manual verification if needed
+                    currentAnswer = data.corrected_answer;
+                    currentSources = data.sources || [];
 
-                loadingArea.classList.add('hidden');
-                responseArea.classList.remove('hidden');
+                    loadingArea.classList.add('hidden');
+                    responseArea.classList.remove('hidden');
 
-                // Render Markdown
-                responseContent.innerHTML = marked.parse(data.answer);
-                responseTime.textContent = `${data.processing_time_ms.toFixed(0)}ms • ${data.mode} mode`;
+                    // Show verified badge
+                    verifiedBadge.classList.remove('hidden');
 
-                // Display sources
-                if (data.sources && data.sources.length > 0) {
-                    sourcesArea.classList.remove('hidden');
-                    sourcesCount.textContent = `${data.sources.length}`;
-                    sourcesList.innerHTML = data.sources.map((source, idx) => `
-                        <div class="source-card bg-gray-50 rounded-lg p-3 border border-gray-100">
-                            <div class="flex items-start gap-3">
-                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <span class="text-blue-700 font-semibold text-sm">${idx + 1}</span>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-2 flex-wrap mb-1">
-                                        <span class="font-medium text-gray-800 text-sm truncate" title="${source.file_name || 'Unknown'}">
-                                            <i data-lucide="file-text" class="w-3 h-3 inline mr-1"></i>
-                                            ${source.file_name || 'Unknown'}
-                                        </span>
-                                        ${source.page ? `
-                                            <span class="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                                                Page ${source.page}
-                                            </span>
-                                        ` : ''}
-                                    </div>
-                                    ${source.excerpt ? `
-                                        <div class="text-sm text-gray-600 leading-relaxed bg-white rounded p-2 border-l-2 border-purple-300">
-                                            <i data-lucide="quote" class="w-3 h-3 inline text-purple-400 mr-1"></i>
-                                            "${source.excerpt}"
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                    lucide.createIcons();
+                    // Show removed citations notice if any were removed
+                    if (data.removed_citations && data.removed_citations.length > 0) {
+                        removedCitationsNotice.classList.remove('hidden');
+                        removedCitationsList.textContent = `제거된 인용: [${data.removed_citations.join('], [')}]`;
+                    }
+
+                    // Render corrected answer
+                    responseContent.innerHTML = marked.parse(data.corrected_answer);
+                    responseTime.textContent = `${data.processing_time_ms.toFixed(0)}ms • ${data.mode} mode • ${(data.accuracy_rate * 100).toFixed(0)}% accuracy`;
+
+                    // Display sources
+                    displaySources(data.sources, sourcesArea, sourcesList, sourcesCount);
+
+                    // Automatically show verification log
+                    displayVerificationLog(data.verification_log, data.accuracy_rate, data.processing_time_ms);
+
                 } else {
-                    sourcesArea.classList.add('hidden');
+                    // Use normal endpoint
+                    const res = await fetch(`${API_BASE}/query`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ question, mode: selectedMode })
+                    });
+                    data = await res.json();
+
+                    // Store for verification
+                    currentAnswer = data.answer;
+                    currentSources = data.sources || [];
+
+                    loadingArea.classList.add('hidden');
+                    responseArea.classList.remove('hidden');
+
+                    // Render Markdown
+                    responseContent.innerHTML = marked.parse(data.answer);
+                    responseTime.textContent = `${data.processing_time_ms.toFixed(0)}ms • ${data.mode} mode`;
+
+                    // Display sources
+                    displaySources(data.sources, sourcesArea, sourcesList, sourcesCount);
                 }
 
             } catch (e) {
@@ -498,6 +583,140 @@
                 responseTime.textContent = '';
                 sourcesArea.classList.add('hidden');
             }
+        }
+
+        function displaySources(sources, sourcesArea, sourcesList, sourcesCount) {
+            if (sources && sources.length > 0) {
+                sourcesArea.classList.remove('hidden');
+                sourcesCount.textContent = `${sources.length}`;
+                sourcesList.innerHTML = sources.map((source, idx) => `
+                    <div class="source-card bg-gray-50 rounded-lg p-3 border border-gray-100">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span class="text-blue-700 font-semibold text-sm">†${idx + 1}</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap mb-1">
+                                    <span class="font-medium text-gray-800 text-sm truncate" title="${source.file_name || 'Unknown'}">
+                                        <i data-lucide="file-text" class="w-3 h-3 inline mr-1"></i>
+                                        ${source.file_name || 'Unknown'}
+                                    </span>
+                                    ${source.page ? `
+                                        <span class="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                                            Page ${source.page}
+                                        </span>
+                                    ` : ''}
+                                </div>
+                                ${source.excerpt ? `
+                                    <div class="text-sm text-gray-600 leading-relaxed bg-white rounded p-2 border-l-2 border-purple-300">
+                                        <i data-lucide="quote" class="w-3 h-3 inline text-purple-400 mr-1"></i>
+                                        "${source.excerpt}"
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                lucide.createIcons();
+            } else {
+                sourcesArea.classList.add('hidden');
+            }
+        }
+
+        function displayVerificationLog(verificationLog, accuracyRate, processingTime) {
+            const verificationArea = document.getElementById('verification-area');
+            const verificationSummary = document.getElementById('verification-summary');
+            const verificationList = document.getElementById('verification-list');
+            const verifyAccuracy = document.getElementById('verify-accuracy');
+
+            if (!verificationLog || verificationLog.length === 0) {
+                verificationArea.classList.add('hidden');
+                return;
+            }
+
+            verificationArea.classList.remove('hidden');
+
+            // Calculate counts
+            const accurateCount = verificationLog.filter(v => v.status === 'accurate').length;
+            const inaccurateCount = verificationLog.filter(v => v.status === 'inaccurate').length;
+            const uncertainCount = verificationLog.filter(v => v.status === 'uncertain').length;
+            const totalCount = verificationLog.length;
+
+            // Update accuracy badge
+            const accuracyPct = (accuracyRate * 100).toFixed(0);
+            let accuracyClass = 'bg-green-100 text-green-700';
+            if (accuracyRate < 0.7) accuracyClass = 'bg-red-100 text-red-700';
+            else if (accuracyRate < 0.9) accuracyClass = 'bg-yellow-100 text-yellow-700';
+            verifyAccuracy.className = `text-xs px-2 py-0.5 rounded-full ${accuracyClass}`;
+            verifyAccuracy.textContent = `${accuracyPct}% Accurate`;
+
+            // Summary
+            verificationSummary.innerHTML = `
+                <div class="grid grid-cols-4 gap-4 text-center">
+                    <div>
+                        <div class="text-2xl font-bold text-gray-800">${totalCount}</div>
+                        <div class="text-xs text-gray-500">Total</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-green-600">${accurateCount}</div>
+                        <div class="text-xs text-gray-500">Accurate</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-red-600">${inaccurateCount}</div>
+                        <div class="text-xs text-gray-500">Inaccurate</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-yellow-600">${uncertainCount}</div>
+                        <div class="text-xs text-gray-500">Uncertain</div>
+                    </div>
+                </div>
+                <div class="mt-3 text-xs text-gray-500 text-center">
+                    Verification Log (Auto-verified)
+                </div>
+            `;
+
+            // Verification details
+            verificationList.innerHTML = verificationLog.map(v => {
+                let statusIcon, statusClass, bgClass;
+                if (v.status === 'uncertain') {
+                    statusIcon = 'help-circle';
+                    statusClass = 'text-yellow-600';
+                    bgClass = 'bg-yellow-50 border-yellow-200';
+                } else if (v.status === 'accurate') {
+                    statusIcon = 'check-circle';
+                    statusClass = 'text-green-600';
+                    bgClass = 'bg-green-50 border-green-200';
+                } else {
+                    statusIcon = 'x-circle';
+                    statusClass = 'text-red-600';
+                    bgClass = 'bg-red-50 border-red-200';
+                }
+
+                return `
+                    <div class="rounded-lg p-3 border ${bgClass}">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 mt-0.5">
+                                <i data-lucide="${statusIcon}" class="w-5 h-5 ${statusClass}"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-medium">[†${v.citation_number}]</span>
+                                    <span class="text-xs text-gray-500">${v.source_file || 'Unknown'}${v.source_page ? `, p.${v.source_page}` : ''}</span>
+                                    <span class="text-xs text-gray-400">(${(v.confidence * 100).toFixed(0)}% confidence)</span>
+                                </div>
+                                <div class="text-sm text-gray-700 mb-2">
+                                    <strong>Statement:</strong> ${v.statement}
+                                </div>
+                                <div class="text-sm ${statusClass} font-medium">
+                                    ${v.explanation}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
         }
 
         async function syncIndex() {
@@ -529,6 +748,163 @@
             } catch (e) {
                 resultEl.className = 'bg-red-50 border border-red-200 rounded-xl p-4 text-red-800';
                 resultEl.innerHTML = '<div class="flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> Error: Server connection failed</div>';
+                lucide.createIcons();
+            }
+        }
+
+        async function rebuildIndex() {
+            if (!confirm('This will clear ALL indexed data and rebuild from scratch. Continue?')) {
+                return;
+            }
+
+            const path = document.getElementById('index-path').value;
+            const resultEl = document.getElementById('index-result');
+
+            resultEl.classList.remove('hidden');
+            resultEl.className = 'bg-orange-50 border border-orange-200 rounded-xl p-4 text-orange-800';
+            resultEl.innerHTML = '<div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div> Rebuilding index (this may take a while)...</div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/index/rebuild`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path, recursive: true })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    resultEl.className = 'bg-green-50 border border-green-200 rounded-xl p-4 text-green-800';
+                    resultEl.innerHTML = `<div class="flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5"></i> ${data.message}</div>`;
+                    await refreshAll();
+                } else {
+                    resultEl.className = 'bg-red-50 border border-red-200 rounded-xl p-4 text-red-800';
+                    resultEl.innerHTML = `<div class="flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> Failed: ${data.detail || data.message}</div>`;
+                }
+                lucide.createIcons();
+            } catch (e) {
+                resultEl.className = 'bg-red-50 border border-red-200 rounded-xl p-4 text-red-800';
+                resultEl.innerHTML = '<div class="flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5"></i> Error: Server connection failed or timeout</div>';
+                lucide.createIcons();
+            }
+        }
+
+        async function verifyCitations() {
+            if (!currentAnswer || currentSources.length === 0) {
+                alert('No response to verify. Please submit a query first.');
+                return;
+            }
+
+            const verifyLoading = document.getElementById('verify-loading');
+            const verificationArea = document.getElementById('verification-area');
+            const verificationSummary = document.getElementById('verification-summary');
+            const verificationList = document.getElementById('verification-list');
+            const verifyAccuracy = document.getElementById('verify-accuracy');
+
+            verifyLoading.classList.remove('hidden');
+            verificationArea.classList.add('hidden');
+
+            try {
+                const res = await fetch(`${API_BASE}/query/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        answer: currentAnswer,
+                        sources: currentSources
+                    })
+                });
+
+                const data = await res.json();
+
+                verifyLoading.classList.add('hidden');
+                verificationArea.classList.remove('hidden');
+
+                // Update accuracy badge
+                const accuracyPct = (data.accuracy_rate * 100).toFixed(0);
+                let accuracyClass = 'bg-green-100 text-green-700';
+                if (data.accuracy_rate < 0.7) accuracyClass = 'bg-red-100 text-red-700';
+                else if (data.accuracy_rate < 0.9) accuracyClass = 'bg-yellow-100 text-yellow-700';
+                verifyAccuracy.className = `text-xs px-2 py-0.5 rounded-full ${accuracyClass}`;
+                verifyAccuracy.textContent = `${accuracyPct}% Accurate`;
+
+                // Summary
+                verificationSummary.innerHTML = `
+                    <div class="grid grid-cols-4 gap-4 text-center">
+                        <div>
+                            <div class="text-2xl font-bold text-gray-800">${data.total_citations}</div>
+                            <div class="text-xs text-gray-500">Total</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-green-600">${data.accurate_count}</div>
+                            <div class="text-xs text-gray-500">Accurate</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-red-600">${data.inaccurate_count}</div>
+                            <div class="text-xs text-gray-500">Inaccurate</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-yellow-600">${data.uncertain_count}</div>
+                            <div class="text-xs text-gray-500">Uncertain</div>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-500 text-center">
+                        Processed in ${data.processing_time_ms.toFixed(0)}ms
+                    </div>
+                `;
+
+                // Verification details
+                verificationList.innerHTML = data.verifications.map(v => {
+                    let statusIcon, statusClass, bgClass;
+                    if (v.confidence < 0.5) {
+                        statusIcon = 'help-circle';
+                        statusClass = 'text-yellow-600';
+                        bgClass = 'bg-yellow-50 border-yellow-200';
+                    } else if (v.is_accurate) {
+                        statusIcon = 'check-circle';
+                        statusClass = 'text-green-600';
+                        bgClass = 'bg-green-50 border-green-200';
+                    } else {
+                        statusIcon = 'x-circle';
+                        statusClass = 'text-red-600';
+                        bgClass = 'bg-red-50 border-red-200';
+                    }
+
+                    return `
+                        <div class="rounded-lg p-3 border ${bgClass}">
+                            <div class="flex items-start gap-3">
+                                <div class="flex-shrink-0 mt-0.5">
+                                    <i data-lucide="${statusIcon}" class="w-5 h-5 ${statusClass}"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-medium">[†${v.citation_number}]</span>
+                                        <span class="text-xs text-gray-500">${v.source_file}${v.source_page ? `, p.${v.source_page}` : ''}</span>
+                                        <span class="text-xs text-gray-400">(${(v.confidence * 100).toFixed(0)}% confidence)</span>
+                                    </div>
+                                    <div class="text-sm text-gray-700 mb-2">
+                                        <strong>Statement:</strong> ${v.statement}
+                                    </div>
+                                    <div class="text-sm ${statusClass} font-medium">
+                                        ${v.explanation}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                lucide.createIcons();
+
+            } catch (e) {
+                verifyLoading.classList.add('hidden');
+                verificationArea.classList.remove('hidden');
+                verificationSummary.innerHTML = `
+                    <div class="text-red-600 flex items-center gap-2">
+                        <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                        Verification failed: ${e.message}
+                    </div>
+                `;
+                verificationList.innerHTML = '';
                 lucide.createIcons();
             }
         }
