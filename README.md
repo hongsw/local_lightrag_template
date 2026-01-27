@@ -227,28 +227,30 @@ docker compose logs -f
 
 ## 타 프레임워크와 비교 (10개)
 
-| 프레임워크 | Knowledge Graph | 인용 검증 | 자동 정정 | 웹 UI | 사용 편의성 |
-|-----------|-----------------|----------|----------|-------|-----------|
-| **Korea Tech RAG** | ✅ (경량) | ✅ | ✅ | ✅ | 쉬움 |
-| LightRAG | ✅ (경량) | ❌ | ❌ | ❌ | 쉬움 |
-| GraphRAG | ✅ (전체) | ❌ | ❌ | ❌ | 어려움 |
-| LangChain | 플러그인 | ❌ | ❌ | ❌ | 어려움 |
-| LlamaIndex | 플러그인 | ❌ | ❌ | ❌ | 보통 |
-| Haystack | ❌ | ❌ | ❌ | 제한적 | 보통 |
-| DSPy | ❌ | ❌ | ❌ | ❌ | 어려움 |
-| RAGFlow | ❌ | ❌ | ❌ | ✅ | 쉬움 |
-| Dify | ❌ | ❌ | ❌ | ✅ | 쉬움 |
-| Kotaemon | GraphRAG 통합 | ❌ | ❌ | ✅ | 쉬움 |
+> GitHub Stars 실시간 조회 기준 (2025-01-27)
+
+| 프레임워크 | GitHub Stars | Knowledge Graph | 인용 검증 | 자동 정정 | 웹 UI |
+|-----------|-------------|-----------------|----------|----------|-------|
+| **Korea Tech RAG** | Private | ✅ (경량) | ✅ | ✅ | ✅ 한글 |
+| Dify | 127k+ | ❌ | ❌ | ❌ | ✅ |
+| LangChain | 125k+ | 플러그인 | ❌ | ❌ | ❌ |
+| RAGFlow | 72k+ | ❌ | ❌ | ❌ | ✅ |
+| LlamaIndex | 47k+ | 플러그인 | ❌ | ❌ | ❌ |
+| DSPy | 32k+ | ❌ | ❌ | ❌ | ❌ |
+| GraphRAG | 31k+ | ✅ (전체) | ❌ | ❌ | ❌ |
+| LightRAG | 28k+ | ✅ (경량) | ❌ | ❌ | ❌ |
+| Kotaemon | 25k+ | GraphRAG 통합 | ❌ | ❌ | ✅ |
+| Haystack | 24k+ | ❌ | ❌ | ❌ | 제한적 |
 
 ### 기능별 1위 프레임워크
 
 | 카테고리 | 1위 | 이유 |
 |---------|-----|------|
 | **인용 정확성** | Korea Tech RAG | 유일한 자동 인용 검증+정정 |
-| **Knowledge Graph** | GraphRAG | 가장 깊은 그래프 분석 |
-| **사용 편의성** | Dify | 로우코드, 풀 UI |
-| **생태계** | LangChain | 95k+ stars |
-| **문서 파싱** | RAGFlow | 심층 문서 이해 |
+| **Knowledge Graph** | GraphRAG | Leiden Community Detection |
+| **사용 편의성** | Dify | 로우코드, 풀 UI, 127k+ stars |
+| **생태계** | LangChain | 125k+ stars |
+| **문서 파싱** | RAGFlow | 심층 문서 이해 (DeepDoc) |
 
 ### 차별점
 
