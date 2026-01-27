@@ -21,6 +21,9 @@ pymupdf>=1.24.0
 # OpenAI (for LightRAG LLM)
 openai>=1.0.0
 
+# NumPy for vector operations
+numpy>=1.24.0
+
 # Async support
 aiofiles>=23.0.0
 

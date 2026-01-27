@@ -1,15 +1,29 @@
-# Korea Tech Education RAG
+# OKT-RAG (Open Korea Tech RAG)
+
+> **"모델에 종속되지 않고, 실사용 로그가 곧 연구 데이터가 되는 한국형 차세대 RAG 플랫폼"**
 
 LightRAG 기반 Knowledge Graph + Vector 검색을 지원하는 RAG(Retrieval-Augmented Generation) API 서버
 
-**Version: 0.3.0** | [변경 이력](#변경-이력)
+**Version: 0.4.0** | [변경 이력](#변경-이력)
+
+![OKT-RAG Dashboard](docs/images/image1.png)
 
 ## 주요 기능
 
+### 핵심 기능
 - **Knowledge Graph RAG**: LightRAG 엔진으로 벡터 검색과 Knowledge Graph를 결합
-- **다중 쿼리 모드**: naive, local, global, hybrid 모드 지원
+- **다중 쿼리 모드**: naive, local, global, hybrid, **adaptive** 모드 지원
 - **🆕 자동 인용 검증**: AI 기반 인용 정확도 검증 및 자동 정정
-- **🆕 웹 대시보드**: 실시간 쿼리/검증 인터페이스
+- **🆕 인라인 인용 스타일링**: 클릭 가능한 인용 배지 `[†1]` → 소스로 이동
+
+### OKT-RAG v0.4.0 신규 기능
+- **🆕 Multi-Embedding**: 문서 1개를 여러 임베딩 공간에 동시 저장 (semantic 1536D, fast 512D)
+- **🆕 Matryoshka 지원**: 품질/속도 트레이드오프를 위한 차원 축소
+- **🆕 Retrieval Observability**: 모든 검색 의사결정 과정 완전 로그화
+- **🆕 Adaptive Retrieval**: 질문 유형 자동 분류 및 최적 전략 선택
+- **🆕 Analytics Dashboard**: 슬롯별/전략별 성능 분석, 비용 추적
+
+### 인프라
 - **다양한 데이터 소스**: Local Files, Google Drive, Slack, Notion 커넥터
 - **증분 인덱싱**: 새 파일만 자동 감지하여 인덱싱 (중복 방지)
 - **FastAPI 기반**: 자동 API 문서화 (Swagger UI)
@@ -69,17 +83,16 @@ python run.py
 
 ### 5. 대시보드 접속
 
-브라우저에서 `http://localhost:8000` 접속
-
-![Dashboard](docs/images/dashboard.png)
+브라우저에서 `http://localhost:8000/dashboard` 접속
 
 ## 웹 대시보드 사용법
 
 ### 기본 쿼리
 
-1. Query Mode 선택 (Hybrid 권장)
-2. 질문 입력
-3. Send 버튼 클릭
+1. Query Mode 선택 (Hybrid 또는 **Adaptive** 권장)
+2. Embedding Slot 선택 (선택사항)
+3. 질문 입력
+4. Send 버튼 클릭
 
 ### Auto-Verify Mode (자동 검증)
 
@@ -88,6 +101,14 @@ python run.py
 2. 각 인용 [†N]을 소스와 자동 대조
 3. 부정확한 인용 자동 제거
 4. 정정된 응답 + 검증 로그 표시
+
+![인라인 인용과 소스 검증](docs/images/image2.png)
+
+### 인용 검증 결과
+
+검증 후 각 인용에 대해 정확/부정확/불확실 상태가 표시됩니다.
+
+![인용 검증 결과와 인덱싱](docs/images/image3.png)
 
 ### 인덱싱
 
@@ -161,18 +182,44 @@ curl -X POST "http://localhost:8000/query/verify" \
 
 ## API 엔드포인트
 
+### Query
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| POST | `/query` | RAG 쿼리 |
-| POST | `/query/verified` | 🆕 검증된 RAG 쿼리 (자동 인용 검증) |
-| POST | `/query/verify` | 🆕 수동 인용 검증 |
+| POST | `/query` | RAG 쿼리 (Adaptive 모드 지원) |
+| POST | `/query/verified` | 검증된 RAG 쿼리 (자동 인용 검증) |
+| POST | `/query/verify` | 수동 인용 검증 |
 | GET | `/query/modes` | 쿼리 모드 목록 |
+
+### Multi-Embedding (🆕 v0.4.0)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/embedding/config` | 멀티 임베딩 설정 조회 |
+| GET | `/embedding/slots` | 임베딩 슬롯 목록 |
+| GET | `/embedding/matryoshka` | Matryoshka 차원 정보 |
+
+### Analytics (🆕 v0.4.0)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/analytics/retrieval` | 검색 통계 (기간별) |
+| GET | `/analytics/slots/performance` | 슬롯별 성능 분석 |
+| GET | `/analytics/strategies/performance` | 전략별 성능 분석 |
+| GET | `/analytics/cost` | 비용 분석 |
+| GET | `/analytics/accuracy/trend` | 정확도 추이 |
+
+### Index
+| Method | Endpoint | 설명 |
+|--------|----------|------|
 | POST | `/index/local` | 로컬 파일 인덱싱 |
 | POST | `/index/local/sync` | 새 파일만 인덱싱 (증분) |
 | POST | `/index/rebuild` | 전체 인덱스 재구축 |
 | GET | `/index/files` | 인덱싱된 파일 목록 |
+
+### System
+| Method | Endpoint | 설명 |
+|--------|----------|------|
 | GET | `/stats` | 시스템 통계 |
 | GET | `/health` | 헬스 체크 |
+| GET | `/dashboard` | 웹 대시보드 |
 
 자세한 API 사용법은 [API_USAGE.md](docs/API_USAGE.md) 참조
 
@@ -183,7 +230,18 @@ curl -X POST "http://localhost:8000/query/verify" \
 | `naive` | 단순 벡터 유사도 검색 | 빠른 검색, 간단한 질문 |
 | `local` | Knowledge Graph 로컬 엔티티 관계 | 특정 개념 간 관계 파악 |
 | `global` | Knowledge Graph 글로벌 패턴 | 전체적인 맥락 이해 |
-| `hybrid` | local + global 결합 (권장) | 대부분의 질문 |
+| `hybrid` | local + global 결합 | 대부분의 질문 |
+| `adaptive` | 🆕 질문 유형 자동 분류 + 최적 전략 선택 (권장) | 모든 질문 유형 |
+
+### Adaptive 모드 (v0.4.0)
+
+질문을 자동 분류하여 최적의 검색 전략을 선택합니다:
+
+| 질문 유형 | 검색 전략 | 임베딩 슬롯 |
+|----------|----------|------------|
+| Factual (사실 확인) | Dense | semantic |
+| Analytical (분석) | Hybrid | semantic + keyword |
+| Comparative (비교) | Multi-slot | all slots |
 
 ## 프로젝트 구조
 
@@ -286,6 +344,31 @@ docker compose logs -f
 - [타 프레임워크 비교](docs/COMPARISON.md)
 
 ## 변경 이력
+
+### v0.4.0 (2025-01-27) - OKT-RAG 릴리스
+**"Open Korea Tech RAG - Model-Agnostic, Multi-Embedding, Observable"**
+
+#### Multi-Embedding Native
+- 🆕 Multi-Embedding Store: 문서 1개를 여러 임베딩 공간에 동시 저장
+- 🆕 Matryoshka 지원: OpenAI text-embedding-3-small 512D/1536D 차원 선택
+- 🆕 임베딩 슬롯 API: `/embedding/config`, `/embedding/slots`
+
+#### Retrieval Observability
+- 🆕 완전 로그화: 모든 검색 의사결정 과정 기록
+- 🆕 RetrievalLogger: 쿼리별 임베딩/검색/응답 단계 로깅
+- 🆕 Analytics API: `/analytics/retrieval`, `/analytics/cost`
+- 🆕 Analytics Dashboard: 슬롯별, 전략별 성능 차트 시각화
+
+#### Adaptive Retrieval
+- 🆕 질문 유형 분류: Factual, Analytical, Comparative 자동 분류
+- 🆕 전략 자동 선택: 질문 유형에 따른 최적 검색 전략
+- 🆕 Adaptive 쿼리 모드 추가
+
+#### 대시보드 개선
+- 🆕 탭 네비게이션: Query / Multi-Embedding / Analytics / Files
+- 🆕 인라인 인용 스타일링: 클릭 가능한 보라색 배지
+- 🆕 Quick Stats 사이드바: 실시간 성능 메트릭
+- 🆕 OKT-RAG Features 표시: Observability, Multi-Embedding, Adaptive 상태
 
 ### v0.3.0 (2025-01-27)
 - 🆕 자동 인용 검증 기능 (`/query/verified` 엔드포인트)

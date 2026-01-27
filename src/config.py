@@ -1,5 +1,8 @@
 """
-Configuration management for the RAG API system.
+Configuration management for the OKT-RAG system.
+
+Supports multi-embedding slots, model-agnostic configuration,
+and observability settings.
 """
 
 import os
@@ -7,7 +10,30 @@ from pathlib import Path
 from typing import Optional
 
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import BaseModel, Field
+
+
+class EmbeddingSlotConfig(BaseModel):
+    """Configuration for an embedding slot."""
+
+    name: str = Field(description="Unique slot identifier")
+    provider: str = Field(default="openai", description="Provider type")
+    model: str = Field(description="Model identifier")
+    dimension: int = Field(description="Embedding dimension")
+    weight: float = Field(default=1.0, description="Weight for hybrid search")
+    enabled: bool = Field(default=True, description="Whether slot is active")
+    description: str = Field(default="", description="Human-readable description")
+
+
+class ObservabilityConfig(BaseModel):
+    """Observability and logging configuration."""
+
+    enabled: bool = Field(default=True, description="Enable retrieval logging")
+    log_embeddings: bool = Field(default=True, description="Log embedding operations")
+    log_searches: bool = Field(default=True, description="Log search operations")
+    log_llm_calls: bool = Field(default=True, description="Log LLM operations")
+    storage_path: str = Field(default="./logs/retrieval", description="Log storage path")
+    buffer_size: int = Field(default=100, description="Log buffer size before flush")
 
 
 class Settings(BaseSettings):
@@ -17,6 +43,49 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(..., alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL")
     embedding_model: str = Field(default="text-embedding-3-small", alias="EMBEDDING_MODEL")
+
+    # Multi-Embedding Slot Configuration
+    embedding_slots: list[EmbeddingSlotConfig] = Field(
+        default=[
+            EmbeddingSlotConfig(
+                name="semantic",
+                provider="openai",
+                model="text-embedding-3-small",
+                dimension=1536,
+                weight=1.0,
+                description="Primary semantic embedding (full dimension)",
+            ),
+            EmbeddingSlotConfig(
+                name="semantic_fast",
+                provider="openai",
+                model="text-embedding-3-small",
+                dimension=512,
+                weight=0.8,
+                description="Fast semantic embedding (Matryoshka 512D)",
+            ),
+        ],
+        description="Embedding slot configurations",
+    )
+
+    # Default embedding slot for queries
+    default_embedding_slot: str = Field(
+        default="semantic",
+        alias="DEFAULT_EMBEDDING_SLOT",
+        description="Default slot for queries without explicit slot specification",
+    )
+
+    # Observability Configuration
+    observability: ObservabilityConfig = Field(
+        default_factory=ObservabilityConfig,
+        description="Observability and logging settings",
+    )
+
+    # Enable multi-embedding mode
+    multi_embedding_enabled: bool = Field(
+        default=True,
+        alias="MULTI_EMBEDDING_ENABLED",
+        description="Enable multi-embedding store (vs legacy single embedding)",
+    )
 
     # LightRAG Configuration
     lightrag_working_dir: str = Field(default="./lightrag_data", alias="LIGHTRAG_WORKING_DIR")
