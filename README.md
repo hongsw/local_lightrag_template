@@ -4,7 +4,7 @@
 
 LightRAG 기반 Knowledge Graph + Vector 검색을 지원하는 RAG(Retrieval-Augmented Generation) API 서버
 
-**Version: 0.4.0** | [변경 이력](#변경-이력)
+**Version: 0.4.1** | [변경 이력](#변경-이력)
 
 ![OKT-RAG Dashboard](docs/images/image1.png)
 
@@ -344,6 +344,17 @@ docker compose logs -f
 - [타 프레임워크 비교](docs/COMPARISON.md)
 
 ## 변경 이력
+
+### v0.4.1 (2025-01-28)
+#### Analytics Dashboard 확장
+- 🆕 Slot Performance 차트: 슬롯별 응답시간/쿼리수 비교
+- 🆕 Strategy Performance 차트: 전략별 응답시간/정확도 비교
+- 🆕 Accuracy Trend 차트: 인용 정확도 추이 라인 차트
+- 🆕 Query Type Distribution 차트: Factual/Analytical/Comparative 분포
+
+#### 버그 수정
+- 🔧 검증 후 제거된 인용의 소스가 Sources 영역에서 필터링되도록 수정
+- 🔧 References 섹션과 Sources 섹션 개수 불일치 문제 해결
 
 ### v0.4.0 (2025-01-27) - OKT-RAG 릴리스
 **"Open Korea Tech RAG - Model-Agnostic, Multi-Embedding, Observable"**

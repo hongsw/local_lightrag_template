@@ -79,7 +79,7 @@ app = FastAPI(
 3. `/embedding/config`에서 멀티 임베딩 설정 확인
 4. `/analytics/retrieval`에서 성능 분석
 """,
-    version="0.4.0",
+    version="0.4.1",
     lifespan=lifespan,
 )
 
