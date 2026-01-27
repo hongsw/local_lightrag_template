@@ -110,7 +110,7 @@ async def root():
     """Root endpoint with API information."""
     return {
         "name": "OKT-RAG API",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "description": "Open Korea Tech RAG Platform - Model-Agnostic, Multi-Embedding, Observable",
         "docs": "/docs",
         "dashboard": "/dashboard",
