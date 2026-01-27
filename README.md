@@ -225,6 +225,34 @@ docker compose up -d
 docker compose logs -f
 ```
 
+## 타 프레임워크와 비교
+
+| 기능 | Korea Tech RAG | LightRAG | GraphRAG | LangChain |
+|------|---------------|----------|----------|-----------|
+| **Knowledge Graph** | ✅ (LightRAG 기반) | ✅ | ✅ | ❌ |
+| **자동 인용 검증** | ✅ | ❌ | ❌ | ❌ |
+| **인용 자동 정정** | ✅ | ❌ | ❌ | ❌ |
+| **웹 대시보드** | ✅ | ❌ | ❌ | ❌ |
+| **REST API** | ✅ | ❌ | ❌ | 수동 구현 |
+| **검색 지연시간** | ~100ms | ~80ms | ~120ms+ | 가변 |
+| **인덱싱 비용** | 중간 | 중간 | 높음 | 낮음 |
+
+### 차별점
+
+1. **자동 인용 검증**: 응답의 각 인용을 소스와 대조하여 정확성 검증
+2. **자동 정정**: 부정확한 인용을 자동으로 제거하고 번호 재정렬
+3. **엄격한 소스 기반**: 프롬프트 최적화로 환각(hallucination) 최소화
+4. **통합 대시보드**: 쿼리, 검증, 인덱싱을 한 곳에서 관리
+
+### 적합한 사용 사례
+
+- 📚 학술/연구 문서 기반 QA
+- 📋 정확한 출처 표기가 필요한 리포트 생성
+- ✅ 팩트체크가 중요한 도메인
+- 🎓 교육 자료 기반 질의응답
+
+자세한 비교는 [COMPARISON.md](docs/COMPARISON.md) 참조
+
 ## 기술 스택
 
 - **RAG 엔진**: [LightRAG](https://github.com/HKUDS/LightRAG) - Knowledge Graph + Vector
@@ -240,6 +268,7 @@ docker compose logs -f
 - [배포 가이드](docs/DEPLOYMENT.md)
 - [인용 검증 프로세스](docs/RAG_CITATION_PROCESS.md)
 - [프롬프트 문서](docs/PROMPTS.md)
+- [타 프레임워크 비교](docs/COMPARISON.md)
 
 ## 변경 이력
 
