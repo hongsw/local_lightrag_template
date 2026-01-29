@@ -4,7 +4,7 @@
 
 LightRAG 기반 Knowledge Graph + Vector 검색을 지원하는 RAG(Retrieval-Augmented Generation) API 서버
 
-**Version: 0.4.1** | [변경 이력](#변경-이력)
+**Version: 0.4.2** | [변경 이력](#변경-이력)
 
 ![OKT-RAG Dashboard](docs/images/image1.png)
 
@@ -344,6 +344,12 @@ docker compose logs -f
 - [타 프레임워크 비교](docs/COMPARISON.md)
 
 ## 변경 이력
+
+### v0.4.2 (2025-01-29)
+#### Citation Verification Tools 문서화
+- 📚 `docs/CITATION_VERIFICATION_TOOLS.md` 신규 작성: 10개 인용 검증 도구 비교 분석
+  - OKT-RAG, Citation-Check-Skill, Ragas, TruLens, DeepEval, Arize Phoenix, LLMWare, FACTUM, SemanticCite, HaluGate
+- 📚 `docs/COMPARISON.md` 업데이트: Citation Verification 도구 섹션 추가
 
 ### v0.4.1 (2025-01-28)
 #### Analytics Dashboard 확장

@@ -2,7 +2,9 @@
 
 본 문서는 Korea Tech Education RAG 시스템과 주요 오픈소스 RAG 프레임워크 10개를 비교 분석합니다.
 
-> **Last Updated**: 2025-01-27 (GitHub API 실시간 조회)
+> **Last Updated**: 2025-01-29 (GitHub API 실시간 조회)
+
+> 📌 **인용 검증(Citation Verification) 전용 도구 비교**: [CITATION_VERIFICATION_TOOLS.md](./CITATION_VERIFICATION_TOOLS.md)
 
 ## 프레임워크 개요 (10개 비교)
 
@@ -431,6 +433,23 @@
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Citation Verification 전용 도구 비교
+
+> 📌 **상세 비교**: [CITATION_VERIFICATION_TOOLS.md](./CITATION_VERIFICATION_TOOLS.md)
+
+| 도구 | 실시간 검증 | 자동 정정 | 상태 분류 | 주요 용도 |
+|-----|-----------|----------|----------|----------|
+| **OKT-RAG** | ✅ | ✅ | 3가지 | 프로덕션 인용 검증 |
+| **Citation-Check-Skill** | ✅ | ❌ | 7가지 | 세분화된 인용 분석 |
+| **Ragas** | ❌ (배치) | ❌ | - | RAG 품질 측정 |
+| **TruLens** | ✅ | ❌ | - | 실시간 피드백 |
+| **DeepEval** | ❌ (배치) | ❌ | - | CI/CD 테스트 |
+| **Arize Phoenix** | ✅ | ❌ | - | 프로덕션 모니터링 |
+| **LLMWare** | ✅ | ❌ | 2가지 | 로컬 경량 검증 |
+| **FACTUM** | ❌ | ❌ | 2가지 | 학술 연구 |
+
+**OKT-RAG**는 **실시간 검증 + 자동 정정**을 모두 지원하는 유일한 도구입니다.
+
 ## 멀티 임베딩 모델 및 탄력적 차원 지원 비교
 
 > 각 프레임워크의 멀티 임베딩 모델 지원 및 Matryoshka 임베딩(탄력적 차원) 기능 비교
@@ -582,6 +601,8 @@ Korea Tech RAG:
 
 ## 참고 자료
 
+### RAG 프레임워크
+
 - [LightRAG GitHub](https://github.com/HKUDS/LightRAG)
 - [Microsoft GraphRAG](https://microsoft.github.io/graphrag/)
 - [LangChain GitHub](https://github.com/langchain-ai/langchain)
@@ -594,6 +615,15 @@ Korea Tech RAG:
 - [Best RAG Frameworks 2025](https://latenode.com/blog/best-rag-frameworks-2025-complete-enterprise-and-open-source-comparison)
 - [Top 10 RAG Frameworks GitHub Repos 2025](https://rowanblackwoon.medium.com/top-10-rag-frameworks-github-repos-2025-dba899ae0355)
 - [Compare Top 7 RAG Frameworks 2025](https://pathway.com/rag-frameworks/)
+
+### Citation Verification 도구
+
+- [Citation-Check-Skill](https://github.com/serenakeyitan/Citation-Check-Skill) - Two-pass 인용 검증
+- [Ragas](https://github.com/explodinggradients/ragas) - RAG 평가 프레임워크
+- [TruLens](https://github.com/truera/trulens) - RAG Triad 평가
+- [DeepEval](https://github.com/confident-ai/deepeval) - LLM 테스트 프레임워크
+- [Arize Phoenix](https://github.com/Arize-ai/phoenix) - LLM 추적 및 평가
+- [LLMWare](https://github.com/llmware-ai/llmware) - RAG + 검증 통합
 
 ### 인용 정확성 관련 학술 자료
 
